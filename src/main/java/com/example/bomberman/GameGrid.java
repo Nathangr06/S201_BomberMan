@@ -43,6 +43,10 @@ public class GameGrid {
         grid[2][1] = EMPTY;
     }
 
+    public boolean inBounds(int x, int y) {
+        return x >= 0 && y >= 0 && x < width && y < height;
+    }
+
     public boolean isWalkable(int x, int y) {
         return inBounds(x, y) && grid[y][x] == EMPTY;
     }
@@ -61,8 +65,37 @@ public class GameGrid {
         }
     }
 
-    public boolean inBounds(int x, int y) {
-        return x >= 0 && y >= 0 && x < width && y < height;
+    public void setIndestructibleWall(int x, int y) {
+        if (inBounds(x, y)) {
+            grid[y][x] = WALL_INDESTRUCTIBLE;
+        }
+    }
+
+    public void setDestructibleWall(int x, int y) {
+        if (inBounds(x, y)) {
+            grid[y][x] = WALL_DESTRUCTIBLE;
+        }
+    }
+
+    public int getCellType(int x, int y) {
+        if (inBounds(x, y)) {
+            return grid[y][x];
+        }
+        return -1; // Valeur invalide si hors limites
+    }
+
+    public void setCellType(int x, int y, int type) {
+        if (inBounds(x, y) && (type == EMPTY || type == WALL_INDESTRUCTIBLE || type == WALL_DESTRUCTIBLE)) {
+            grid[y][x] = type;
+        }
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 
     public void render(GraphicsContext gc) {
