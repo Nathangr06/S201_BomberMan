@@ -36,11 +36,6 @@ public class GameGrid {
                 }
             }
         }
-
-        // Clear starting area
-        grid[1][1] = EMPTY;
-        grid[1][2] = EMPTY;
-        grid[2][1] = EMPTY;
     }
 
     public boolean isWalkable(int x, int y) {

@@ -33,6 +33,12 @@ public class BombermanGame extends Application {
 
     private InputHandler inputHandler;
 
+    // Variables pour le déplacement fluide
+    private double playerPixelX, playerPixelY; // Position en pixels
+    private double playerSpeed = 2.0; // Vitesse en pixels par frame
+    private boolean isMoving = false;
+    private int targetGridX, targetGridY; // Position cible sur la grille
+
     @Override
     public void start(Stage primaryStage) {
         initializeGame();
@@ -61,6 +67,12 @@ public class BombermanGame extends Application {
 
         player = new Player(1,1);
 
+        // Initialiser la position en pixels
+        playerPixelX = player.getX() * TILE_SIZE;
+        playerPixelY = player.getY() * TILE_SIZE;
+        targetGridX = player.getX();
+        targetGridY = player.getY();
+
         bombs = new java.util.ArrayList<>();
         explosions = new java.util.ArrayList<>();
     }
@@ -74,39 +86,71 @@ public class BombermanGame extends Application {
         gameLoop.play();
     }
 
-    private long lastMoveTime = 0;
-    private static final long MOVE_INTERVAL = 200_000_000; // 200 ms
-
     private void update() {
         handleInput();
+        updatePlayerMovement();
         updateBombs();
         updateExplosions();
     }
 
     private void handleInput() {
-        long now = System.nanoTime();
+        // Gérer le déplacement seulement si le joueur n'est pas en train de bouger
+        if (!isMoving) {
+            int newTargetX = targetGridX;
+            int newTargetY = targetGridY;
 
-        if (now - lastMoveTime < MOVE_INTERVAL) {
-            return;
+            if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.LEFT)) {
+                newTargetX--;
+            } else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.RIGHT)) {
+                newTargetX++;
+            } else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.UP)) {
+                newTargetY--;
+            } else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.DOWN)) {
+                newTargetY++;
+            }
+
+            // Vérifier si le mouvement est possible
+            if ((newTargetX != targetGridX || newTargetY != targetGridY) &&
+                    grid.isWalkable(newTargetX, newTargetY) && !hasBombAt(newTargetX, newTargetY)) {
+                targetGridX = newTargetX;
+                targetGridY = newTargetY;
+                isMoving = true;
+            }
         }
 
-        int newX = player.getX();
-        int newY = player.getY();
-
-        if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.LEFT)) newX--;
-        else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.RIGHT)) newX++;
-        else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.UP)) newY--;
-        else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.DOWN)) newY++;
-
-        if (grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
-            player.setPosition(newX, newY);
-        }
-
-        lastMoveTime = now;
-
+        // Gérer le placement de bombes
         if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.SPACE)) {
             placeBomb();
             inputHandler.setKeyReleased(javafx.scene.input.KeyCode.SPACE);
+        }
+    }
+
+    private void updatePlayerMovement() {
+        if (isMoving) {
+            double targetPixelX = targetGridX * TILE_SIZE;
+            double targetPixelY = targetGridY * TILE_SIZE;
+
+            // Calculer la direction
+            double deltaX = targetPixelX - playerPixelX;
+            double deltaY = targetPixelY - playerPixelY;
+
+            // Calculer la distance
+            double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            if (distance <= playerSpeed) {
+                // Arriver à destination
+                playerPixelX = targetPixelX;
+                playerPixelY = targetPixelY;
+                player.setPosition(targetGridX, targetGridY);
+                isMoving = false;
+            } else {
+                // Continuer le mouvement
+                double moveX = (deltaX / distance) * playerSpeed;
+                double moveY = (deltaY / distance) * playerSpeed;
+
+                playerPixelX += moveX;
+                playerPixelY += moveY;
+            }
         }
     }
 
@@ -115,8 +159,12 @@ public class BombermanGame extends Application {
     }
 
     private void placeBomb() {
-        if (!hasBombAt(player.getX(), player.getY())) {
-            bombs.add(new Bomb(player.getX(), player.getY()));
+        // Placer la bombe à la position actuelle de la grille du joueur
+        int currentGridX = (int)(playerPixelX / TILE_SIZE + 0.5); // Arrondir à la case la plus proche
+        int currentGridY = (int)(playerPixelY / TILE_SIZE + 0.5);
+
+        if (!hasBombAt(currentGridX, currentGridY)) {
+            bombs.add(new Bomb(currentGridX, currentGridY));
         }
     }
 
@@ -167,22 +215,25 @@ public class BombermanGame extends Application {
 
         grid.render(gc);
 
+        // Dessiner les explosions
         gc.setFill(Color.ORANGE);
         for (Explosion explosion : explosions) {
             gc.fillRect(explosion.getX() * TILE_SIZE + 5, explosion.getY() * TILE_SIZE + 5,
                     TILE_SIZE - 10, TILE_SIZE - 10);
         }
 
+        // Dessiner les bombes
         gc.setFill(Color.BLACK);
         for (Bomb bomb : bombs) {
             gc.fillOval(bomb.getX() * TILE_SIZE + 8, bomb.getY() * TILE_SIZE + 8,
                     TILE_SIZE - 16, TILE_SIZE - 16);
         }
 
+        // Dessiner le joueur avec sa position en pixels (fluide)
         gc.setFill(Color.BLUE);
-        gc.fillOval(player.getX() * TILE_SIZE + 5, player.getY() * TILE_SIZE + 5,
-                TILE_SIZE - 10, TILE_SIZE - 10);
+        gc.fillOval(playerPixelX + 5, playerPixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
 
+        // Dessiner la grille
         gc.setStroke(Color.DARKGREEN);
         gc.setLineWidth(1);
         for (int x = 0; x <= GRID_WIDTH; x++) {
