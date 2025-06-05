@@ -44,6 +44,14 @@ public class BombermanGame extends Application {
     private int player1TargetX, player1TargetY;
     private int player2TargetX, player2TargetY;
 
+    private Flag flag1, flag2;
+    private boolean player1HasFlag = false;
+    private boolean player2HasFlag = false;
+    private boolean captureTheFlagMode = true; // pour activer/désactiver le mode
+    private boolean player1Alive = true;
+    private boolean player2Alive = true;
+
+
     @Override
     public void start(Stage primaryStage) {
         initializeGame();
