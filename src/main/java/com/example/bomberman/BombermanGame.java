@@ -28,17 +28,21 @@ public class BombermanGame extends Application {
     private Timeline gameLoop;
 
     private GameGrid grid;
-    private Player player;
+    private Player player1;
+    private Player player2;
     private List<Bomb> bombs;
     private List<Explosion> explosions;
     private TextureManager textureManager;
 
     private InputHandler inputHandler;
 
-    private double playerPixelX, playerPixelY;
+    private double player1PixelX, player1PixelY;
+    private double player2PixelX, player2PixelY;
     private double playerSpeed = 2.0;
-    private boolean isMoving = false;
-    private int targetGridX, targetGridY;
+    private boolean isPlayer1Moving = false;
+    private boolean isPlayer2Moving = false;
+    private int player1TargetX, player1TargetY;
+    private int player2TargetX, player2TargetY;
 
     @Override
     public void start(Stage primaryStage) {
@@ -68,11 +72,18 @@ public class BombermanGame extends Application {
         grid = new GameGrid(GRID_WIDTH, GRID_HEIGHT);
         grid.generate();
 
-        player = new Player(1, 1);
-        playerPixelX = player.getX() * TILE_SIZE;
-        playerPixelY = player.getY() * TILE_SIZE;
-        targetGridX = player.getX();
-        targetGridY = player.getY();
+        player1 = new Player(1, 1);
+        player2 = new Player(13, 11);
+
+        player1PixelX = player1.getX() * TILE_SIZE;
+        player1PixelY = player1.getY() * TILE_SIZE;
+        player1TargetX = player1.getX();
+        player1TargetY = player1.getY();
+
+        player2PixelX = player2.getX() * TILE_SIZE;
+        player2PixelY = player2.getY() * TILE_SIZE;
+        player2TargetX = player2.getX();
+        player2TargetY = player2.getY();
 
         bombs = new java.util.ArrayList<>();
         explosions = new java.util.ArrayList<>();
@@ -92,67 +103,98 @@ public class BombermanGame extends Application {
         updatePlayerMovement();
         updateBombs();
         updateExplosions();
-        checkPowerUpCollection();
         checkPlayerExplosionCollision();
     }
 
     private void handleInput() {
-        if (!isMoving) {
-            int newX = targetGridX;
-            int newY = targetGridY;
-
+        if (!isPlayer1Moving) {
+            int newX = player1TargetX;
+            int newY = player1TargetY;
             if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.LEFT)) newX--;
             else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.RIGHT)) newX++;
             else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.UP)) newY--;
             else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.DOWN)) newY++;
 
-            if ((newX != targetGridX || newY != targetGridY) &&
-                    grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
-                targetGridX = newX;
-                targetGridY = newY;
-                isMoving = true;
+            if ((newX != player1TargetX || newY != player1TargetY) && grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
+                player1TargetX = newX;
+                player1TargetY = newY;
+                isPlayer1Moving = true;
             }
         }
 
-        if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.SPACE)) {
-            placeBomb();
-            inputHandler.setKeyReleased(javafx.scene.input.KeyCode.SPACE);
+        if (!isPlayer2Moving) {
+            int newX = player2TargetX;
+            int newY = player2TargetY;
+            if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Q)) newX--;
+            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.D)) newX++;
+            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Z)) newY--;
+            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.S)) newY++;
+
+            if ((newX != player2TargetX || newY != player2TargetY) && grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
+                player2TargetX = newX;
+                player2TargetY = newY;
+                isPlayer2Moving = true;
+            }
+        }
+
+        if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.ENTER)) {
+            placeBomb(player1);
+            inputHandler.setKeyReleased(javafx.scene.input.KeyCode.ENTER);
+        }
+
+
+        if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.B)) {
+            placeBomb(player2);
+            inputHandler.setKeyReleased(javafx.scene.input.KeyCode.B);
         }
     }
 
     private void updatePlayerMovement() {
-        if (isMoving) {
-            double targetPixelX = targetGridX * TILE_SIZE;
-            double targetPixelY = targetGridY * TILE_SIZE;
-
-            double dx = targetPixelX - playerPixelX;
-            double dy = targetPixelY - playerPixelY;
+        if (isPlayer1Moving) {
+            double targetX = player1TargetX * TILE_SIZE;
+            double targetY = player1TargetY * TILE_SIZE;
+            double dx = targetX - player1PixelX;
+            double dy = targetY - player1PixelY;
             double distance = Math.sqrt(dx * dx + dy * dy);
-
             if (distance <= playerSpeed) {
-                playerPixelX = targetPixelX;
-                playerPixelY = targetPixelY;
-                player.setPosition(targetGridX, targetGridY);
-                isMoving = false;
+                player1PixelX = targetX;
+                player1PixelY = targetY;
+                player1.setPosition(player1TargetX, player1TargetY);
+                isPlayer1Moving = false;
             } else {
-                double moveX = (dx / distance) * playerSpeed;
-                double moveY = (dy / distance) * playerSpeed;
-                playerPixelX += moveX;
-                playerPixelY += moveY;
+                player1PixelX += (dx / distance) * playerSpeed;
+                player1PixelY += (dy / distance) * playerSpeed;
             }
+        }
+
+        if (isPlayer2Moving) {
+            double targetX = player2TargetX * TILE_SIZE;
+            double targetY = player2TargetY * TILE_SIZE;
+            double dx = targetX - player2PixelX;
+            double dy = targetY - player2PixelY;
+            double distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance <= playerSpeed) {
+                player2PixelX = targetX;
+                player2PixelY = targetY;
+                player2.setPosition(player2TargetX, player2TargetY);
+                isPlayer2Moving = false;
+            } else {
+                player2PixelX += (dx / distance) * playerSpeed;
+                player2PixelY += (dy / distance) * playerSpeed;
+            }
+        }
+    }
+
+    private void placeBomb(Player player) {
+        int x = player.getX();
+        int y = player.getY();
+        if (!hasBombAt(x, y)) {
+            bombs.add(new Bomb(x, y));
         }
     }
 
     private boolean hasBombAt(int x, int y) {
         return bombs.stream().anyMatch(b -> b.getX() == x && b.getY() == y);
-    }
-
-    private void placeBomb() {
-        int x = (int)(playerPixelX / TILE_SIZE + 0.5);
-        int y = (int)(playerPixelY / TILE_SIZE + 0.5);
-        if (bombs.size() < player.getBombCapacity() && !hasBombAt(x, y)) {
-            bombs.add(new Bomb(x, y));
-        }
     }
 
     private void updateBombs() {
@@ -168,7 +210,7 @@ public class BombermanGame extends Application {
     }
 
     private void explodeBomb(Bomb bomb) {
-        int range = player.getFireRange();
+        int range = 2;
         explosions.add(new Explosion(bomb.getX(), bomb.getY(), 60));
 
         int[] dx = {0, 1, 0, -1};
@@ -193,35 +235,18 @@ public class BombermanGame extends Application {
     }
 
     private void updateExplosions() {
-        explosions.removeIf(explosion -> explosion.decreaseTimerAndCheck());
-    }
-
-    private void checkPowerUpCollection() {
-        int x = targetGridX;
-        int y = targetGridY;
-
-        if (grid.isPowerUp(x, y)) {
-            int type = grid.getTileType(x, y);
-            switch (type) {
-                case GameGrid.POWERUP_BOMB -> {
-                    player.increaseBombCapacity();
-                    System.out.println("Power-up Bombe !");
-                }
-                case GameGrid.POWERUP_FIRE -> {
-                    player.increaseFireRange();
-                    System.out.println("Power-up Feu !");
-                }
-            }
-            grid.removePowerUp(x, y);
-        }
+        explosions.removeIf(Explosion::decreaseTimerAndCheck);
     }
 
     private void checkPlayerExplosionCollision() {
-        int px = targetGridX;
-        int py = targetGridY;
+        int p1X = player1.getX();
+        int p1Y = player1.getY();
+        int p2X = player2.getX();
+        int p2Y = player2.getY();
 
         for (Explosion explosion : explosions) {
-            if (explosion.getX() == px && explosion.getY() == py) {
+            if ((explosion.getX() == p1X && explosion.getY() == p1Y) ||
+                    (explosion.getX() == p2X && explosion.getY() == p2Y)) {
                 playerDeath();
                 return;
             }
@@ -229,17 +254,8 @@ public class BombermanGame extends Application {
     }
 
     private void playerDeath() {
-        System.out.println("Game Over !");
         gameLoop.stop();
-        Timeline restartTimer = new Timeline(new KeyFrame(Duration.seconds(2), e -> restartGame()));
-        restartTimer.play();
-    }
-
-    private void restartGame() {
-        gameLoop.stop();
-        initializeGame();
-        startGameLoop();
-        System.out.println("Jeu redémarré !");
+        System.out.println("Game Over!");
     }
 
     private void render() {
@@ -273,39 +289,16 @@ public class BombermanGame extends Application {
         }
 
         Image playerTexture = textureManager.getTexture("player");
+        Image player2Texture = textureManager.getTexture("player2");
         if (playerTexture != null) {
-            gc.drawImage(playerTexture, playerPixelX, playerPixelY, TILE_SIZE, TILE_SIZE);
+            gc.drawImage(playerTexture, player1PixelX, player1PixelY, TILE_SIZE, TILE_SIZE);
+            gc.drawImage(player2Texture, player2PixelX, player2PixelY, TILE_SIZE, TILE_SIZE);
         } else {
             gc.setFill(Color.BLUE);
-            gc.fillOval(playerPixelX + 5, playerPixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+            gc.fillOval(player1PixelX + 5, player1PixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+            gc.setFill(Color.RED);
+            gc.fillOval(player2PixelX + 5, player2PixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
         }
-
-        renderGrid(gc);
-        renderUI(gc);
-    }
-
-    private void renderGrid(GraphicsContext gc) {
-        gc.setStroke(Color.DARKGREEN);
-        gc.setLineWidth(0.5);
-        gc.setGlobalAlpha(0.3);
-        for (int x = 0; x <= GRID_WIDTH; x++) {
-            gc.strokeLine(x * TILE_SIZE, 0, x * TILE_SIZE, CANVAS_HEIGHT);
-        }
-        for (int y = 0; y <= GRID_HEIGHT; y++) {
-            gc.strokeLine(0, y * TILE_SIZE, CANVAS_WIDTH, y * TILE_SIZE);
-        }
-        gc.setGlobalAlpha(1.0);
-    }
-
-    private void renderUI(GraphicsContext gc) {
-        gc.setFill(Color.WHITE);
-        gc.setFont(javafx.scene.text.Font.font(14));
-        gc.fillText("Bombes: " + bombs.size() + "/" + player.getBombCapacity(), 10, 20);
-        gc.fillText("Portée: " + player.getFireRange(), 10, 40);
-
-        gc.setFill(Color.YELLOW);
-        gc.setFont(javafx.scene.text.Font.font(10));
-        gc.fillText("Flèches: Bouger | Espace: Bombe", CANVAS_WIDTH - 180, CANVAS_HEIGHT - 10);
     }
 
     public static void main(String[] args) {
