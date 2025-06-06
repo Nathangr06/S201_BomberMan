@@ -26,14 +26,6 @@ public class BombermanMainApp extends Application {
         primaryStage.setTitle("Bomberman - Menu Principal");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
-        primaryStage.centerOnScreen();
-
-        // Ajouter une icône si vous en avez une
-        try {
-            primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/bomb-icon.png")));
-        } catch (Exception e) {
-            System.out.println("Icône non trouvée, utilisation de l'icône par défaut");
-        }
 
         // Afficher la fenêtre
         primaryStage.show();
