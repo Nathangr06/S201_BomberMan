@@ -22,9 +22,7 @@ public class BombermanLevelEditor extends Application {
         EMPTY("Vide", Color.LIGHTGRAY),
         WALL("Mur", Color.GREY),
         DESTRUCTIBLE_WALL("Mur Destructible", Color.BROWN),
-        PLAYER_SPAWN("Spawn Joueur", Color.BLUE),
-        ENEMY_SPAWN("Spawn Ennemi", Color.RED),
-        POWER_UP("Power-up", Color.YELLOW);
+        PLAYER_SPAWN("Spawn Joueur", Color.BLUE);
 
         private final String name;
         private final Color color;
@@ -241,8 +239,6 @@ public class BombermanLevelEditor extends Application {
                 switch (grid[i][j]) {
                     case WALL: walls++; break;
                     case DESTRUCTIBLE_WALL: destructibleWalls++; break;
-                    case ENEMY_SPAWN: enemies++; break;
-                    case POWER_UP: powerUps++; break;
                     case PLAYER_SPAWN: hasPlayerSpawn = true; break;
                 }
             }

@@ -239,7 +239,7 @@ public class MainMenuController implements Initializable {
                 BombermanGame game = new BombermanGame();
                 // game.setCustomMap(selectedMapFile); // À implémenter
                 Stage gameStage = new Stage();
-                game.startGame(gameStage);
+                game.startGame(gameStage, selectedMapFile);
 
                 currentStage.close();
 
