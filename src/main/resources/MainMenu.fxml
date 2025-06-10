@@ -29,6 +29,8 @@
                     </font>
                 </Button>
 
+                <Button fx:id="playAIButton" mnemonicParsing="false" onAction="#handlePlayAI" prefHeight="50.0" prefWidth="200.0" text="🤖 Jouer contre l'IA" />
+
                 <!-- Bouton Éditeur -->
                 <Button fx:id="editorButton" mnemonicParsing="false" onAction="#handleOpenEditor" prefHeight="50.0" prefWidth="300.0" text="🛠️ ÉDITEUR DE NIVEAUX">
                     <font>

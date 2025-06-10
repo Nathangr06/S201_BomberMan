@@ -46,6 +46,10 @@ public class BombermanGame {
     private static final int TIMER_HEIGHT = 60; // Hauteur de la zone du timer
 
     // Variables pour le mouvement fluide des joueurs
+    private boolean aiMode = false;
+    private AIPlayer aiPlayer;
+    private long lastAIMoveTime = 0;
+    private static final long AI_MOVE_INTERVAL = 500_000_000; // 500ms entre chaque action IA
     private boolean isPlayer1Moving = false;
     private boolean isPlayer2Moving = false;
     private int player1TargetX = 1;
@@ -73,6 +77,10 @@ public class BombermanGame {
 
     public BombermanGame() {
         // L'initialisation se fait dans startGame()
+    }
+
+    public void setAIMode(boolean aiMode) {
+        this.aiMode = aiMode;
     }
 
     public void startGame(Stage stage) {
@@ -130,6 +138,10 @@ public class BombermanGame {
         player2VisualX = 13 * TILE_SIZE;
         player2VisualY = 11 * TILE_SIZE + TIMER_HEIGHT;
 
+        if (aiMode) {
+            aiPlayer = new AIPlayer(grid, this);
+        }
+
         bombs = new ArrayList<>();
         explosions = new ArrayList<>();
     }
@@ -162,6 +174,9 @@ public class BombermanGame {
             player2TargetY = 11;
             player2VisualX = 13 * TILE_SIZE;
             player2VisualY = 11 * TILE_SIZE + TIMER_HEIGHT;
+        }
+        if (aiMode) {
+            aiPlayer = new AIPlayer(grid, this);
         }
     }
 
@@ -269,20 +284,65 @@ public class BombermanGame {
             }
         }
 
-        // Contrôles Joueur 2 (ZQSD)
-        if (!isPlayer2Moving && (currentTime - lastPlayer2MoveTime) > MOVE_COOLDOWN) {
-            int newX = player2TargetX;
-            int newY = player2TargetY;
-            if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Q)) newX--;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.D)) newX++;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Z)) newY--;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.S)) newY++;
+        // Contrôles Joueur 2 (ZQSD) ou IA
+        if (aiMode) {
+            // IA contrôle le joueur 2
+            if (!isPlayer2Moving && (currentTime - lastAIMoveTime) > AI_MOVE_INTERVAL) {
+                AIPlayer.AIAction action = aiPlayer.getNextAction(bombs, explosions);
+                if (action != null) {
+                    switch (action) {
+                        case MOVE_LEFT:
+                            if (grid.isWalkable(player2TargetX - 1, player2TargetY) && !hasBombAt(player2TargetX - 1, player2TargetY)) {
+                                player2TargetX--;
+                                isPlayer2Moving = true;
+                            }
+                            break;
+                        case MOVE_RIGHT:
+                            if (grid.isWalkable(player2TargetX + 1, player2TargetY) && !hasBombAt(player2TargetX + 1, player2TargetY)) {
+                                player2TargetX++;
+                                isPlayer2Moving = true;
+                            }
+                            break;
+                        case MOVE_UP:
+                            if (grid.isWalkable(player2TargetX, player2TargetY - 1) && !hasBombAt(player2TargetX, player2TargetY - 1)) {
+                                player2TargetY--;
+                                isPlayer2Moving = true;
+                            }
+                            break;
+                        case MOVE_DOWN:
+                            if (grid.isWalkable(player2TargetX, player2TargetY + 1) && !hasBombAt(player2TargetX, player2TargetY + 1)) {
+                                player2TargetY++;
+                                isPlayer2Moving = true;
+                            }
+                            break;
+                        case PLACE_BOMB:
+                            placeBomb(player2);
+                            break;
+                    }
+                    lastAIMoveTime = currentTime;
+                }
+            }
+        } else {
+            // Contrôles manuels pour le joueur 2
+            if (!isPlayer2Moving && (currentTime - lastPlayer2MoveTime) > MOVE_COOLDOWN) {
+                int newX = player2TargetX;
+                int newY = player2TargetY;
+                if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Q)) newX--;
+                else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.D)) newX++;
+                else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Z)) newY--;
+                else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.S)) newY++;
 
-            if ((newX != player2TargetX || newY != player2TargetY) && grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
-                player2TargetX = newX;
-                player2TargetY = newY;
-                isPlayer2Moving = true;
-                lastPlayer2MoveTime = currentTime;
+                if ((newX != player2TargetX || newY != player2TargetY) && grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
+                    player2TargetX = newX;
+                    player2TargetY = newY;
+                    isPlayer2Moving = true;
+                    lastPlayer2MoveTime = currentTime;
+                }
+            }
+
+            if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.SPACE)) {
+                placeBomb(player2);
+                inputHandler.setKeyReleased(javafx.scene.input.KeyCode.SPACE);
             }
         }
 
@@ -651,6 +711,9 @@ public class BombermanGame {
     public boolean isGameRunning() {
         return gameRunning;
     }
+
+    public Player getPlayer1() { return player1; }
+    public Player getPlayer2() { return player2; }
 
     public void restartGame() {
         stopGame();

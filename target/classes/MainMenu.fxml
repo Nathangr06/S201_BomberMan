@@ -3,52 +3,78 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
 
-<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.example.bomberman.MainMenuController" styleClass="main-menu-root">
-
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.bomberman.MainMenuController">
     <center>
-        <VBox fx:id="mainContainer" styleClass="main-container">
+        <VBox fx:id="mainContainer" alignment="CENTER" spacing="30.0" style="-fx-background-color: linear-gradient(to bottom, #667eea, #764ba2);">
+            <padding>
+                <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
+            </padding>
+
             <!-- Titre principal -->
-            <Label fx:id="titleLabel" text="💣 BOMBERMAN 💣" styleClass="title-label" />
+            <Label fx:id="titleLabel" text="💣 BOMBERMAN 💣" textFill="WHITE">
+                <font>
+                    <Font name="System Bold" size="48.0" />
+                </font>
+            </Label>
 
             <!-- Conteneur principal des boutons -->
-            <VBox styleClass="buttons-container">
+            <VBox alignment="CENTER" spacing="20.0" style="-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 20; -fx-padding: 40;">
 
                 <!-- Bouton Jouer -->
-                <Button fx:id="playButton" onAction="#handlePlayGame"
-                        text="🎮 JOUER" styleClass="menu-button, primary-button" />
-                <Button fx:id="playWithAIButton" mnemonicParsing="false" onAction="#handlePlayWithAI"
-                        prefHeight="50.0" prefWidth="300.0" text="🤖 Jouer contre l'IA">
-                    <VBox.margin>
-                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                    </VBox.margin>
+                <Button fx:id="playButton" mnemonicParsing="false" onAction="#handlePlayGame" prefHeight="50.0" prefWidth="300.0" text="🎮 JOUER">
+                    <font>
+                        <Font name="System Bold" size="18.0" />
+                    </font>
                 </Button>
+
+                <Button fx:id="playAIButton" mnemonicParsing="false" onAction="#handlePlayAI" prefHeight="50.0" prefWidth="200.0" text="🤖 Jouer contre l'IA" />
+
                 <!-- Bouton Éditeur -->
-                <Button fx:id="editorButton" onAction="#handleOpenEditor"
-                        text="🛠️ ÉDITEUR DE NIVEAUX" styleClass="menu-button, secondary-button" />
+                <Button fx:id="editorButton" mnemonicParsing="false" onAction="#handleOpenEditor" prefHeight="50.0" prefWidth="300.0" text="🛠️ ÉDITEUR DE NIVEAUX">
+                    <font>
+                        <Font name="System Bold" size="18.0" />
+                    </font>
+                </Button>
 
                 <!-- Section Carte Personnalisée -->
-                <VBox styleClass="custom-map-section">
+                <VBox alignment="CENTER" spacing="15.0" style="-fx-border-color: rgba(255,255,255,0.3); -fx-border-radius: 15; -fx-padding: 20;">
 
-                    <Label text="📁 CARTE PERSONNALISÉE" styleClass="section-title" />
+                    <Label text="📁 CARTE PERSONNALISÉE" textFill="WHITE">
+                        <font>
+                            <Font name="System Bold" size="16.0" />
+                        </font>
+                    </Label>
 
                     <!-- Bouton Charger Carte -->
-                    <Button fx:id="loadMapButton" onAction="#handleLoadMap"
-                            text="📂 CHOISIR UNE CARTE (.bmn)" styleClass="menu-button, tertiary-button" />
+                    <Button fx:id="loadMapButton" mnemonicParsing="false" onAction="#handleLoadMap" prefHeight="45.0" prefWidth="280.0" text="📂 CHOISIR UNE CARTE (.bmn)">
+                        <font>
+                            <Font name="System Bold" size="14.0" />
+                        </font>
+                    </Button>
 
                     <!-- Informations de la carte sélectionnée -->
-                    <VBox fx:id="mapInfoContainer" styleClass="map-info-container">
+                    <VBox fx:id="mapInfoContainer" alignment="CENTER" spacing="10.0" style="-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 10; -fx-padding: 15;">
 
-                        <Label fx:id="selectedMapLabel" text="📋 Aucune carte sélectionnée"
-                               styleClass="map-info-label" />
+                        <Label fx:id="selectedMapLabel" text="📋 Aucune carte sélectionnée" textFill="WHITE">
+                            <font>
+                                <Font size="14.0" />
+                            </font>
+                        </Label>
 
-                        <HBox styleClass="map-actions-container">
-                            <Button onAction="#handlePlayWithCustomMap"
-                                    text="🚀 JOUER" styleClass="action-button, success-button" />
+                        <HBox alignment="CENTER" spacing="10.0">
+                            <Button mnemonicParsing="false" onAction="#handlePlayWithCustomMap" prefHeight="35.0" prefWidth="150.0" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-background-radius: 15;" text="🚀 JOUER">
+                                <font>
+                                    <Font name="System Bold" size="12.0" />
+                                </font>
+                            </Button>
 
-                            <Button onAction="#handleClearMap"
-                                    text="🗑️ EFFACER" styleClass="action-button, danger-button" />
+                            <Button mnemonicParsing="false" onAction="#handleClearMap" prefHeight="35.0" prefWidth="100.0" style="-fx-background-color: #E74C3C; -fx-text-fill: white; -fx-background-radius: 15;" text="🗑️ EFFACER">
+                                <font>
+                                    <Font name="System Bold" size="12.0" />
+                                </font>
+                            </Button>
                         </HBox>
 
                     </VBox>
@@ -56,8 +82,11 @@
                 </VBox>
 
                 <!-- Bouton Quitter -->
-                <Button fx:id="exitButton" onAction="#handleExit"
-                        text="🚪 QUITTER" styleClass="menu-button, exit-button" />
+                <Button fx:id="exitButton" mnemonicParsing="false" onAction="#handleExit" prefHeight="45.0" prefWidth="200.0" text="🚪 QUITTER">
+                    <font>
+                        <Font name="System Bold" size="16.0" />
+                    </font>
+                </Button>
 
             </VBox>
 
@@ -66,7 +95,7 @@
 
     <!-- Pane pour les animations de fond -->
     <bottom>
-        <Pane fx:id="backgroundPane" styleClass="background-pane" />
+        <Pane fx:id="backgroundPane" prefHeight="0.0" />
     </bottom>
 
 </BorderPane>

@@ -29,6 +29,7 @@ public class MainMenuController implements Initializable {
     @FXML private Button editorButton;
     @FXML private Button loadMapButton;
     @FXML private Button exitButton;
+    @FXML private Button playAIButton;
     @FXML private Label selectedMapLabel;
     @FXML private VBox mapInfoContainer;
     @FXML private Pane backgroundPane;
@@ -53,6 +54,7 @@ public class MainMenuController implements Initializable {
         setupButton(editorButton, "#4ECDC4");
         setupButton(loadMapButton, "#9B59B6");
         setupButton(exitButton, "#E74C3C");
+        setupButton(playAIButton, "#8E44AD");
 
         // Masquer les informations de carte par défaut
         mapInfoContainer.setVisible(false);
@@ -104,7 +106,7 @@ public class MainMenuController implements Initializable {
 
         // Animation d'apparition des boutons
         Timeline buttonAnimation = new Timeline();
-        Button[] buttons = {playButton, editorButton, loadMapButton, exitButton};
+        Button[] buttons = {playButton, playAIButton, editorButton, loadMapButton, exitButton};
 
         for (int i = 0; i < buttons.length; i++) {
             buttons[i].setOpacity(0);
@@ -172,6 +174,27 @@ public class MainMenuController implements Initializable {
 
         } catch (Exception e) {
             showNotification("❌ Erreur lors du lancement du jeu: " + e.getMessage(),
+                    NotificationType.ERROR);
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handlePlayAI() {
+        showNotification("🤖 Lancement du jeu contre l'IA...", NotificationType.INFO);
+
+        try {
+            Stage currentStage = (Stage) playAIButton.getScene().getWindow();
+
+            BombermanGame game = new BombermanGame();
+            game.setAIMode(true);
+            Stage gameStage = new Stage();
+            game.startGame(gameStage);
+
+            currentStage.close();
+
+        } catch (Exception e) {
+            showNotification("❌ Erreur lors du lancement du jeu IA: " + e.getMessage(),
                     NotificationType.ERROR);
             e.printStackTrace();
         }
