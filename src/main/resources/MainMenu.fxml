@@ -18,7 +18,12 @@
                 <!-- Bouton Jouer -->
                 <Button fx:id="playButton" onAction="#handlePlayGame"
                         text="🎮 JOUER" styleClass="menu-button, primary-button" />
-
+                <Button fx:id="playWithAIButton" mnemonicParsing="false" onAction="#handlePlayWithAI"
+                        prefHeight="50.0" prefWidth="300.0" text="🤖 Jouer contre l'IA">
+                    <VBox.margin>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </VBox.margin>
+                </Button>
                 <!-- Bouton Éditeur -->
                 <Button fx:id="editorButton" onAction="#handleOpenEditor"
                         text="🛠️ ÉDITEUR DE NIVEAUX" styleClass="menu-button, secondary-button" />

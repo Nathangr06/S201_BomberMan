@@ -34,6 +34,8 @@ public class BombermanGame {
     private Player player2;
     private InputHandler inputHandler;
     private TextureManager textureManager;
+    private AIController aiController;
+    private boolean isAIGame = false;
 
     public BombermanGame() {
         gameStateManager = new GameStateManager();
@@ -53,6 +55,12 @@ public class BombermanGame {
 
         startGameLoop();
         gameStateManager.startGame();
+    }
+
+    public void startGameWithAI(Stage stage) {
+        this.isAIGame = true;
+        this.aiController = new AIController();
+        startGame(stage, null);
     }
 
     private void initializeGame(File levelFile) {
@@ -118,6 +126,11 @@ public class BombermanGame {
         try {
             inputController.handlePlayerInput(player1, player2);
 
+            // Gestion de l'IA si activée
+            if (isAIGame && aiController != null) {
+                aiController.updateAI(player2, movementController, bombManager);
+            }
+
             if (inputController.isEscapePressed()) {
                 stopGame();
                 return;
@@ -178,6 +191,11 @@ public class BombermanGame {
         player2.setTargetPosition(13, 11);
         player2.setVisualPosition(13 * GameConstants.TILE_SIZE, 11 * GameConstants.TILE_SIZE);
         player2.setMoving(false);
+
+        // Réinitialiser l'IA si nécessaire
+        if (isAIGame && aiController != null) {
+            aiController = new AIController();
+        }
 
         gameStateManager.startGame();
         if (gameLoop != null) {

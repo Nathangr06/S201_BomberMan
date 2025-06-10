@@ -28,6 +28,7 @@ public class MainMenuController implements Initializable {
     @FXML private Button playButton;
     @FXML private Button editorButton;
     @FXML private Button loadMapButton;
+    @FXML private Button playWithAIButton;
     @FXML private Button exitButton;
     @FXML private Label selectedMapLabel;
     @FXML private VBox mapInfoContainer;
@@ -53,6 +54,7 @@ public class MainMenuController implements Initializable {
         setupButton(editorButton, "#4ECDC4");
         setupButton(loadMapButton, "#9B59B6");
         setupButton(exitButton, "#E74C3C");
+        setupButton(playWithAIButton, "#F39C12");
 
         // Masquer les informations de carte par défaut
         mapInfoContainer.setVisible(false);
@@ -104,7 +106,7 @@ public class MainMenuController implements Initializable {
 
         // Animation d'apparition des boutons
         Timeline buttonAnimation = new Timeline();
-        Button[] buttons = {playButton, editorButton, loadMapButton, exitButton};
+        Button[] buttons = {playButton, playWithAIButton, editorButton, loadMapButton, exitButton};
 
         for (int i = 0; i < buttons.length; i++) {
             buttons[i].setOpacity(0);
@@ -326,6 +328,26 @@ public class MainMenuController implements Initializable {
 
         public String getColor() {
             return color;
+        }
+    }
+
+    @FXML
+    private void handlePlayWithAI() {
+        showNotification("🤖 Lancement du jeu contre l'IA...", NotificationType.INFO);
+
+        try {
+            Stage currentStage = (Stage) playWithAIButton.getScene().getWindow();
+
+            BombermanGame game = new BombermanGame();
+            Stage gameStage = new Stage();
+            game.startGameWithAI(gameStage);
+
+            currentStage.close();
+
+        } catch (Exception e) {
+            showNotification("❌ Erreur lors du lancement du jeu IA: " + e.getMessage(),
+                    NotificationType.ERROR);
+            e.printStackTrace();
         }
     }
 }
