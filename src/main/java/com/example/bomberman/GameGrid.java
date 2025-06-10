@@ -107,17 +107,17 @@ public class GameGrid {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int tileType = grid[y][x];
-                int pixelX = x * GameConstants.TILE_SIZE;
-                int pixelY = y *  GameConstants.TILE_SIZE;
+                int pixelX = x * BombermanGame.TILE_SIZE;
+                int pixelY = y * BombermanGame.TILE_SIZE;
 
                 // Dessiner le sol en arrière-plan pour toutes les cases
                 Image groundTexture = textureManager.getTexture("ground");
                 if (groundTexture != null) {
                     gc.drawImage(groundTexture, pixelX, pixelY,
-                            GameConstants.TILE_SIZE, GameConstants.TILE_SIZE);
+                            BombermanGame.TILE_SIZE, BombermanGame.TILE_SIZE);
                 } else {
                     gc.setFill(Color.LIGHTGREEN);
-                    gc.fillRect(pixelX, pixelY,  GameConstants.TILE_SIZE,  GameConstants.TILE_SIZE);
+                    gc.fillRect(pixelX, pixelY, BombermanGame.TILE_SIZE, BombermanGame.TILE_SIZE);
                 }
 
                 // Dessiner les éléments par-dessus
@@ -139,7 +139,7 @@ public class GameGrid {
 
                 if (texture != null) {
                     gc.drawImage(texture, pixelX, pixelY,
-                            GameConstants.TILE_SIZE,  GameConstants.TILE_SIZE);
+                            BombermanGame.TILE_SIZE, BombermanGame.TILE_SIZE);
                 }
             }
         }
