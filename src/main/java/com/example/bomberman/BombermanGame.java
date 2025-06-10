@@ -45,6 +45,19 @@ public class BombermanGame {
     private long gameDuration = 0; // Durée du jeu en secondes
     private static final int TIMER_HEIGHT = 60; // Hauteur de la zone du timer
 
+    // Système de vies
+    private int player1Lives = 3;
+    private int player2Lives = 3;
+    private int player1SpawnX = 1;
+    private int player1SpawnY = 1;
+    private int player2SpawnX = 13;
+    private int player2SpawnY = 11;
+
+    // Système d'invincibilité
+    private int player1InvincibilityTimer = 0;
+    private int player2InvincibilityTimer = 0;
+    private static final int INVINCIBILITY_DURATION = 60; // Durée d'une explosion de bombe
+
     // Variables pour le mouvement fluide des joueurs
     private boolean aiMode = false;
     private AIPlayer aiPlayer;
@@ -124,19 +137,35 @@ public class BombermanGame {
         grid = new GameGrid(GRID_WIDTH, GRID_HEIGHT);
         grid.generate();
 
+        // Positions de spawn par défaut
+        player1SpawnX = 1;
+        player1SpawnY = 1;
+        player2SpawnX = 13;
+        player2SpawnY = 11;
+
         // Joueur 1 en haut à gauche
-        player1 = new Player(1, 1);
-        player1TargetX = 1;
-        player1TargetY = 1;
-        player1VisualX = 1 * TILE_SIZE;
-        player1VisualY = 1 * TILE_SIZE + TIMER_HEIGHT;
+        player1 = new Player(player1SpawnX, player1SpawnY);
+        player1TargetX = player1SpawnX;
+        player1TargetY = player1SpawnY;
+        player1VisualX = player1SpawnX * TILE_SIZE;
+        player1VisualY = player1SpawnY * TILE_SIZE + TIMER_HEIGHT;
 
         // Joueur 2 en bas à droite
-        player2 = new Player(13, 11);
-        player2TargetX = 13;
-        player2TargetY = 11;
-        player2VisualX = 13 * TILE_SIZE;
-        player2VisualY = 11 * TILE_SIZE + TIMER_HEIGHT;
+        player2 = new Player(player2SpawnX, player2SpawnY);
+        player2TargetX = player2SpawnX;
+        player2TargetY = player2SpawnY;
+        player2VisualX = player2SpawnX * TILE_SIZE;
+        player2VisualY = player2SpawnY * TILE_SIZE + TIMER_HEIGHT;
+
+        // Réinitialiser les vies et invincibilité
+        player1Lives = 3;
+        player2Lives = 3;
+        player1InvincibilityTimer = 0;
+        player2InvincibilityTimer = 0;
+
+        if (aiMode) {
+            aiPlayer = new AIPlayer(grid, this);
+        }
 
         if (aiMode) {
             aiPlayer = new AIPlayer(grid, this);
@@ -161,19 +190,32 @@ public class BombermanGame {
         // Vérifier que les deux joueurs sont définis
         if (player1 == null) {
             System.err.println("Aucun spawn joueur 1 trouvé, position par défaut utilisée");
-            player1 = new Player(1, 1);
-            player1TargetX = 1;
-            player1TargetY = 1;
-            player1VisualX = 1 * TILE_SIZE;
-            player1VisualY = 1 * TILE_SIZE + TIMER_HEIGHT;
+            player1SpawnX = 1;
+            player1SpawnY = 1;
+            player1 = new Player(player1SpawnX, player1SpawnY);
+            player1TargetX = player1SpawnX;
+            player1TargetY = player1SpawnY;
+            player1VisualX = player1SpawnX * TILE_SIZE;
+            player1VisualY = player1SpawnY * TILE_SIZE + TIMER_HEIGHT;
         }
         if (player2 == null) {
             System.err.println("Aucun spawn joueur 2 trouvé, position par défaut utilisée");
-            player2 = new Player(13, 11);
-            player2TargetX = 13;
-            player2TargetY = 11;
-            player2VisualX = 13 * TILE_SIZE;
-            player2VisualY = 11 * TILE_SIZE + TIMER_HEIGHT;
+            player2SpawnX = 13;
+            player2SpawnY = 11;
+            player2 = new Player(player2SpawnX, player2SpawnY);
+            player2TargetX = player2SpawnX;
+            player2TargetY = player2SpawnY;
+            player2VisualX = player2SpawnX * TILE_SIZE;
+            player2VisualY = player2SpawnY * TILE_SIZE + TIMER_HEIGHT;
+        }
+
+        // Réinitialiser les vies et invincibilité
+        player1Lives = 3;
+        player2Lives = 3;
+        player1InvincibilityTimer = 0;
+        player2InvincibilityTimer = 0;
+        if (aiMode) {
+            aiPlayer = new AIPlayer(grid, this);
         }
         if (aiMode) {
             aiPlayer = new AIPlayer(grid, this);
@@ -212,6 +254,8 @@ public class BombermanGame {
                         case DESTRUCTIBLE_WALL -> grid.setDestructibleWall(j, i);
                         case PLAYER_SPAWN -> {
                             grid.setEmpty(j, i);
+                            player1SpawnX = j;
+                            player1SpawnY = i;
                             player1 = new Player(j, i);
                             player1TargetX = j;
                             player1TargetY = i;
@@ -220,6 +264,8 @@ public class BombermanGame {
                         }
                         case PLAYER2_SPAWN -> {
                             grid.setEmpty(j, i);
+                            player2SpawnX = j;
+                            player2SpawnY = i;
                             player2 = new Player(j, i);
                             player2TargetX = j;
                             player2TargetY = i;
@@ -250,6 +296,7 @@ public class BombermanGame {
         try {
             handleInput();
             updatePlayerMovement();
+            updateInvincibility();
             updateBombs();
             updateExplosions();
             checkCollisions();
@@ -411,6 +458,16 @@ public class BombermanGame {
         }
     }
 
+    private void updateInvincibility() {
+        // Décrémenter les timers d'invincibilité
+        if (player1InvincibilityTimer > 0) {
+            player1InvincibilityTimer--;
+        }
+        if (player2InvincibilityTimer > 0) {
+            player2InvincibilityTimer--;
+        }
+    }
+
     private boolean hasBombAt(int x, int y) {
         return bombs.stream().anyMatch(b -> b.getX() == x && b.getY() == y);
     }
@@ -464,17 +521,67 @@ public class BombermanGame {
 
     private void checkCollisions() {
         for (Explosion explosion : explosions) {
-            // Vérifier collision avec joueur 1
-            if (explosion.getX() == player1.getX() && explosion.getY() == player1.getY()) {
-                gameOver("Joueur 2");
+            // Vérifier collision avec joueur 1 (seulement s'il n'est pas invincible)
+            if (player1InvincibilityTimer <= 0 && explosion.getX() == player1.getX() && explosion.getY() == player1.getY()) {
+                handlePlayerDeath(1);
                 return;
             }
-            // Vérifier collision avec joueur 2
-            if (explosion.getX() == player2.getX() && explosion.getY() == player2.getY()) {
-                gameOver("Joueur 1");
+            // Vérifier collision avec joueur 2 (seulement s'il n'est pas invincible)
+            if (player2InvincibilityTimer <= 0 && explosion.getX() == player2.getX() && explosion.getY() == player2.getY()) {
+                handlePlayerDeath(2);
                 return;
             }
         }
+    }
+
+    private void handlePlayerDeath(int playerNumber) {
+        if (playerNumber == 1) {
+            player1Lives--;
+            System.out.println("Joueur 1 mort! Vies restantes: " + player1Lives);
+
+            if (player1Lives <= 0) {
+                gameOver("Joueur 2");
+            } else {
+                // Respawn du joueur 1
+                respawnPlayer1();
+            }
+        } else if (playerNumber == 2) {
+            player2Lives--;
+            System.out.println("Joueur 2 mort! Vies restantes: " + player2Lives);
+
+            if (player2Lives <= 0) {
+                gameOver("Joueur 1");
+            } else {
+                // Respawn du joueur 2
+                respawnPlayer2();
+            }
+        }
+    }
+
+    private void respawnPlayer1() {
+        // Remettre le joueur 1 à sa position de spawn
+        player1.setPosition(player1SpawnX, player1SpawnY);
+        player1TargetX = player1SpawnX;
+        player1TargetY = player1SpawnY;
+        player1VisualX = player1SpawnX * TILE_SIZE;
+        player1VisualY = player1SpawnY * TILE_SIZE + TIMER_HEIGHT;
+        isPlayer1Moving = false;
+
+        // Activer l'invincibilité temporaire
+        player1InvincibilityTimer = INVINCIBILITY_DURATION;
+    }
+
+    private void respawnPlayer2() {
+        // Remettre le joueur 2 à sa position de spawn
+        player2.setPosition(player2SpawnX, player2SpawnY);
+        player2TargetX = player2SpawnX;
+        player2TargetY = player2SpawnY;
+        player2VisualX = player2SpawnX * TILE_SIZE;
+        player2VisualY = player2SpawnY * TILE_SIZE + TIMER_HEIGHT;
+        isPlayer2Moving = false;
+
+        // Activer l'invincibilité temporaire
+        player2InvincibilityTimer = INVINCIBILITY_DURATION;
     }
 
     private void gameOver(String winner) {
@@ -537,16 +644,40 @@ public class BombermanGame {
                 }
             }
 
-            // Joueurs
+            // Joueurs avec effet visuel d'invincibilité
             Image playerTexture = textureManager.getTexture("player");
             Image player2Texture = textureManager.getTexture("player2");
+
             if (playerTexture != null) {
-                gc.drawImage(playerTexture, player1VisualX, player1VisualY, TILE_SIZE, TILE_SIZE);
-                gc.drawImage(player2Texture, player2VisualX, player2VisualY, TILE_SIZE, TILE_SIZE);
+                // Joueur 1 avec effet de clignotement si invincible
+                if (player1InvincibilityTimer > 0 && (player1InvincibilityTimer / 5) % 2 == 0) {
+                    // Clignotement : ne pas dessiner le joueur 1 frames sur 2
+                } else {
+                    gc.drawImage(playerTexture, player1VisualX, player1VisualY, TILE_SIZE, TILE_SIZE);
+                }
+
+                // Joueur 2 avec effet de clignotement si invincible
+                if (player2InvincibilityTimer > 0 && (player2InvincibilityTimer / 5) % 2 == 0) {
+                    // Clignotement : ne pas dessiner le joueur 2 frames sur 2
+                } else {
+                    gc.drawImage(player2Texture, player2VisualX, player2VisualY, TILE_SIZE, TILE_SIZE);
+                }
             } else {
-                gc.setFill(Color.BLUE);
+                // Fallback avec cercles colorés
+                if (player1InvincibilityTimer > 0 && (player1InvincibilityTimer / 5) % 2 == 0) {
+                    // Clignotement : couleur semi-transparente
+                    gc.setFill(Color.LIGHTBLUE);
+                } else {
+                    gc.setFill(Color.BLUE);
+                }
                 gc.fillOval(player1VisualX + 5, player1VisualY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
-                gc.setFill(Color.RED);
+
+                if (player2InvincibilityTimer > 0 && (player2InvincibilityTimer / 5) % 2 == 0) {
+                    // Clignotement : couleur semi-transparente
+                    gc.setFill(Color.LIGHTCORAL);
+                } else {
+                    gc.setFill(Color.RED);
+                }
                 gc.fillOval(player2VisualX + 5, player2VisualY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
             }
         } catch (Exception ex) {
@@ -578,106 +709,31 @@ public class BombermanGame {
         gc.setLineWidth(2);
         gc.strokeRect(0, 0, CANVAS_WIDTH, TIMER_HEIGHT);
 
-        // Dimensions pour les éléments
-        double sectionWidth = CANVAS_WIDTH / 5.0; // 5 sections : J1, Score1, Timer, Score2, J2
-        double iconSize = 30;
-        double scoreBoxWidth = 50;
-        double scoreBoxHeight = 25;
+        // Timer au centre
         double timerBoxWidth = 80;
         double timerBoxHeight = 30;
-
-        // Section Joueur 1 (gauche)
-        renderPlayerSection(20, iconSize, Color.BLUE, "1", 0);
-
-        // Score Joueur 1
-        renderScoreBox(sectionWidth + 10, 0);
-
-        // Timer au centre
         renderTimerBox((CANVAS_WIDTH - timerBoxWidth) / 2, (TIMER_HEIGHT - timerBoxHeight) / 2, timerBoxWidth, timerBoxHeight);
 
-        // Score Joueur 2
-        renderScoreBox(CANVAS_WIDTH - sectionWidth - scoreBoxWidth - 10, 0);
-
-        // Section Joueur 2 (droite)
-        renderPlayerSection(CANVAS_WIDTH - 60, iconSize, Color.RED, "2", 0);
-    }
-
-    private void renderPlayerSection(double x, double iconSize, Color playerColor, String playerNum, int score) {
-        double y = (TIMER_HEIGHT - iconSize) / 2;
-
-        // Icône de bombe stylisée
-        gc.setFill(Color.BLACK);
-        gc.fillOval(x, y, iconSize, iconSize);
-
-        // Mèche de la bombe
-        gc.setStroke(Color.ORANGE);
-        gc.setLineWidth(3);
-        gc.strokeLine(x + iconSize * 0.7, y + iconSize * 0.2, x + iconSize * 0.9, y);
-
-        // Highlight sur la bombe
-        gc.setFill(Color.GRAY);
-        gc.fillOval(x + 5, y + 5, iconSize * 0.3, iconSize * 0.3);
-
-        // Couronne du joueur (icône stylisée)
-        double crownX = x + iconSize + 5;
-        double crownY = y;
-        double crownSize = iconSize * 0.8;
-
-        // Base de la couronne
-        gc.setFill(playerColor);
-        gc.fillRect(crownX, crownY + crownSize * 0.6, crownSize, crownSize * 0.4);
-
-        // Pics de la couronne
-        gc.fillPolygon(
-                new double[]{crownX, crownX + crownSize * 0.2, crownX + crownSize * 0.1},
-                new double[]{crownY + crownSize * 0.6, crownY, crownY + crownSize * 0.6},
-                3
-        );
-        gc.fillPolygon(
-                new double[]{crownX + crownSize * 0.2, crownX + crownSize * 0.5, crownX + crownSize * 0.35},
-                new double[]{crownY + crownSize * 0.6, crownY + crownSize * 0.1, crownY + crownSize * 0.6},
-                3
-        );
-        gc.fillPolygon(
-                new double[]{crownX + crownSize * 0.5, crownX + crownSize * 0.8, crownX + crownSize * 0.65},
-                new double[]{crownY + crownSize * 0.6, crownY, crownY + crownSize * 0.6},
-                3
-        );
-        gc.fillPolygon(
-                new double[]{crownX + crownSize * 0.8, crownX + crownSize, crownX + crownSize * 0.9},
-                new double[]{crownY + crownSize * 0.6, crownY + crownSize * 0.1, crownY + crownSize * 0.6},
-                3
-        );
-
-        // Bordure noire pour la couronne
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        gc.strokeRect(crownX, crownY + crownSize * 0.6, crownSize, crownSize * 0.4);
-    }
-
-    private void renderScoreBox(double x, int score) {
-        double boxY = (TIMER_HEIGHT - 25) / 2;
-        double boxWidth = 50;
-        double boxHeight = 25;
-
-        // Fond noir pour le score
-        gc.setFill(Color.BLACK);
-        gc.fillRect(x, boxY, boxWidth, boxHeight);
-
-        // Bordure blanche
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(2);
-        gc.strokeRect(x, boxY, boxWidth, boxHeight);
-
-        // Texte du score
+        // Section Joueur 1 à gauche
         gc.setFill(Color.WHITE);
         gc.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        String scoreText = String.valueOf(score);
+        gc.fillText("Joueur 1", 20, TIMER_HEIGHT / 2 - 5);
 
-        // Centrer le texte dans la boîte
-        double textX = x + (boxWidth - scoreText.length() * 8) / 2;
-        double textY = boxY + boxHeight / 2 + 6;
-        gc.fillText(scoreText, textX, textY);
+        // Vies du joueur 1
+        gc.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        gc.fillText("Vies: " + player1Lives, 20, TIMER_HEIGHT / 2 + 15);
+
+        // Section Joueur 2 à droite
+        gc.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        String player2Text = "Joueur 2";
+        double textWidth = player2Text.length() * 9; // Approximation de la largeur du texte
+        gc.fillText(player2Text, CANVAS_WIDTH - textWidth - 20, TIMER_HEIGHT / 2 - 5);
+
+        // Vies du joueur 2
+        gc.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        String livesText = "Vies: " + player2Lives;
+        double livesWidth = livesText.length() * 8;
+        gc.fillText(livesText, CANVAS_WIDTH - livesWidth - 20, TIMER_HEIGHT / 2 + 15);
     }
 
     private void renderTimerBox(double x, double y, double width, double height) {
@@ -724,20 +780,26 @@ public class BombermanGame {
         gameStartTime = System.currentTimeMillis();
         gameDuration = 0;
 
+        // Réinitialiser les vies et invincibilité
+        player1Lives = 3;
+        player2Lives = 3;
+        player1InvincibilityTimer = 0;
+        player2InvincibilityTimer = 0;
+
         // Remettre les joueurs à leurs positions initiales
         if (player1 != null) {
-            player1.setPosition(1, 1);
-            player1TargetX = 1;
-            player1TargetY = 1;
-            player1VisualX = 1 * TILE_SIZE;
-            player1VisualY = 1 * TILE_SIZE + TIMER_HEIGHT;
+            player1.setPosition(player1SpawnX, player1SpawnY);
+            player1TargetX = player1SpawnX;
+            player1TargetY = player1SpawnY;
+            player1VisualX = player1SpawnX * TILE_SIZE;
+            player1VisualY = player1SpawnY * TILE_SIZE + TIMER_HEIGHT;
         }
         if (player2 != null) {
-            player2.setPosition(13, 11);
-            player2TargetX = 13;
-            player2TargetY = 11;
-            player2VisualX = 13 * TILE_SIZE;
-            player2VisualY = 11 * TILE_SIZE + TIMER_HEIGHT;
+            player2.setPosition(player2SpawnX, player2SpawnY);
+            player2TargetX = player2SpawnX;
+            player2TargetY = player2SpawnY;
+            player2VisualX = player2SpawnX * TILE_SIZE;
+            player2VisualY = player2SpawnY * TILE_SIZE + TIMER_HEIGHT;
         }
 
         isPlayer1Moving = false;

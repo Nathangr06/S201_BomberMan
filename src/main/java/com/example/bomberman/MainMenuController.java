@@ -29,10 +29,10 @@ public class MainMenuController implements Initializable {
     @FXML private Button editorButton;
     @FXML private Button loadMapButton;
     @FXML private Button exitButton;
-    @FXML private Button playAIButton;
     @FXML private Label selectedMapLabel;
     @FXML private VBox mapInfoContainer;
     @FXML private Pane backgroundPane;
+    @FXML private Button playAIButton;
 
     private File selectedMapFile;
     private Timeline backgroundAnimation;
@@ -199,6 +199,7 @@ public class MainMenuController implements Initializable {
             e.printStackTrace();
         }
     }
+
 
     @FXML
     private void handleOpenEditor() {
