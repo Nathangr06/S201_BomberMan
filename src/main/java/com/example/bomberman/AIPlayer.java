@@ -14,7 +14,9 @@ public class AIPlayer {
     private final BombermanGame game;
     private final Random random;
     private long lastActionTime = 0;
-    private static final long ACTION_COOLDOWN = 300_000_000; // 300ms entre les actions
+    private static final long ACTION_COOLDOWN = 200_000_000; // 200ms entre les actions
+    private boolean justPlacedBomb = false;
+    private int lastBombX = -1, lastBombY = -1;
 
     public AIPlayer(GameGrid grid, BombermanGame game) {
         this.grid = grid;
@@ -25,7 +27,7 @@ public class AIPlayer {
     public AIAction getNextAction(List<Bomb> bombs, List<Explosion> explosions) {
         long currentTime = System.nanoTime();
 
-        // Cooldown entre les actions pour éviter les mouvements trop rapides
+        // Cooldown entre les actions
         if (currentTime - lastActionTime < ACTION_COOLDOWN) {
             return AIAction.WAIT;
         }
@@ -38,25 +40,39 @@ public class AIPlayer {
         int x = player2.getX();
         int y = player2.getY();
 
-        // PRIORITÉ 1: Vérifier si l'IA est en danger immédiat
-        if (isInImmediateDanger(x, y, bombs, explosions)) {
-            AIAction escapeAction = findEscapeRoute(x, y, bombs, explosions);
+        // Vérifier si on vient de placer une bombe
+        if (justPlacedBomb && hasBombAt(lastBombX, lastBombY, bombs)) {
+            // On est encore sur notre bombe, il faut absolument s'enfuir
+            AIAction escapeAction = findBestEscapeRoute(x, y, bombs, explosions);
+            if (escapeAction != null) {
+                lastActionTime = currentTime;
+                return escapeAction;
+            }
+        } else {
+            // Reset du flag si la bombe a explosé ou n'existe plus
+            justPlacedBomb = false;
+        }
+
+        // PRIORITÉ 1: Échapper au danger immédiat
+        if (isInDanger(x, y, bombs, explosions)) {
+            AIAction escapeAction = findBestEscapeRoute(x, y, bombs, explosions);
             if (escapeAction != null) {
                 lastActionTime = currentTime;
                 return escapeAction;
             }
         }
 
-        // PRIORITÉ 2: Placer une bombe si c'est stratégique (20% de chance)
-        if (random.nextDouble() < 0.2) {
-            if (shouldPlaceBomb(x, y, player1, bombs)) {
-                lastActionTime = currentTime;
-                return AIAction.PLACE_BOMB;
-            }
+        // PRIORITÉ 2: Placer une bombe si c'est sûr et utile
+        if (canSafelyPlaceBomb(x, y, player1, bombs, explosions)) {
+            justPlacedBomb = true;
+            lastBombX = x;
+            lastBombY = y;
+            lastActionTime = currentTime;
+            return AIAction.PLACE_BOMB;
         }
 
-        // PRIORITÉ 3: Se déplacer vers un objectif ou aléatoirement
-        AIAction moveAction = chooseMoveAction(x, y, player1, bombs, explosions);
+        // PRIORITÉ 3: Se déplacer intelligemment
+        AIAction moveAction = chooseSmartMove(x, y, player1, bombs, explosions);
         if (moveAction != null) {
             lastActionTime = currentTime;
             return moveAction;
@@ -65,23 +81,18 @@ public class AIPlayer {
         return AIAction.WAIT;
     }
 
-    private boolean isInImmediateDanger(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
-        // Vérifier si l'IA est dans une explosion
+    private boolean isInDanger(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
+        // Danger immédiat des explosions
         for (Explosion explosion : explosions) {
             if (explosion.getX() == x && explosion.getY() == y) {
                 return true;
             }
         }
 
-        // Vérifier si une bombe va exploser à proximité
+        // Danger des bombes qui vont exploser
         for (Bomb bomb : bombs) {
-            if (bomb.getTimer() <= 30) { // Bombe va exploser bientôt
-                int bombX = bomb.getX();
-                int bombY = bomb.getY();
-
-                // Vérifier si l'IA est dans la ligne d'explosion (horizontale ou verticale)
-                if ((bombX == x && Math.abs(bombY - y) <= 2) ||
-                        (bombY == y && Math.abs(bombX - x) <= 2)) {
+            if (bomb.getTimer() <= 60) { // Plus de marge
+                if (isInBlastRange(x, y, bomb.getX(), bomb.getY())) {
                     return true;
                 }
             }
@@ -90,32 +101,56 @@ public class AIPlayer {
         return false;
     }
 
-    private AIAction findEscapeRoute(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
-        // Directions possibles : haut, bas, gauche, droite
-        int[] dx = {0, 0, -1, 1};
-        int[] dy = {-1, 1, 0, 0};
-        AIAction[] actions = {AIAction.MOVE_UP, AIAction.MOVE_DOWN, AIAction.MOVE_LEFT, AIAction.MOVE_RIGHT};
+    private boolean isInBlastRange(int x, int y, int bombX, int bombY) {
+        // Même ligne horizontale
+        if (y == bombY && Math.abs(x - bombX) <= 2) {
+            return true;
+        }
+        // Même ligne verticale
+        if (x == bombX && Math.abs(y - bombY) <= 2) {
+            return true;
+        }
+        return false;
+    }
+
+    private AIAction findBestEscapeRoute(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
+        // Directions possibles
+        int[] dx = {-1, 1, 0, 0};
+        int[] dy = {0, 0, -1, 1};
+        AIAction[] actions = {AIAction.MOVE_LEFT, AIAction.MOVE_RIGHT, AIAction.MOVE_UP, AIAction.MOVE_DOWN};
 
         List<AIAction> safeMoves = new ArrayList<>();
+        List<AIAction> lessUnsafeMoves = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
             int newX = x + dx[i];
             int newY = y + dy[i];
 
-            if (isSafePosition(newX, newY, bombs, explosions)) {
-                safeMoves.add(actions[i]);
+            if (canMoveTo(newX, newY, bombs)) {
+                if (isSafeFromDanger(newX, newY, bombs, explosions)) {
+                    safeMoves.add(actions[i]);
+                } else if (!isInExplosion(newX, newY, explosions)) {
+                    // Pas parfaitement sûr mais mieux que rester dans une explosion
+                    lessUnsafeMoves.add(actions[i]);
+                }
             }
         }
 
+        // Prioriser les mouvements complètement sûrs
         if (!safeMoves.isEmpty()) {
             return safeMoves.get(random.nextInt(safeMoves.size()));
+        }
+
+        // Sinon, prendre le moins dangereux
+        if (!lessUnsafeMoves.isEmpty()) {
+            return lessUnsafeMoves.get(random.nextInt(lessUnsafeMoves.size()));
         }
 
         return null;
     }
 
-    private boolean isSafePosition(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
-        // Vérifier les limites de la grille
+    private boolean canMoveTo(int x, int y, List<Bomb> bombs) {
+        // Vérifier les limites
         if (!grid.inBounds(x, y)) {
             return false;
         }
@@ -125,24 +160,23 @@ public class AIPlayer {
             return false;
         }
 
-        // Vérifier les bombes
-        if (hasBombAt(x, y, bombs)) {
+        // Vérifier les bombes (on peut passer sur une bombe qu'on vient de placer)
+        if (hasBombAt(x, y, bombs) && !(justPlacedBomb && x == lastBombX && y == lastBombY)) {
             return false;
         }
 
-        // Vérifier les explosions
+        return true;
+    }
+
+    private boolean isSafeFromDanger(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
+        // Pas dans une explosion
         if (isInExplosion(x, y, explosions)) {
             return false;
         }
 
-        // Vérifier si la position sera dangereuse à cause d'une bombe
+        // Pas dans le rayon d'une bombe dangereuse
         for (Bomb bomb : bombs) {
-            int bombX = bomb.getX();
-            int bombY = bomb.getY();
-
-            // Si la position est dans la ligne d'explosion d'une bombe
-            if ((bombX == x && Math.abs(bombY - y) <= 2) ||
-                    (bombY == y && Math.abs(bombX - x) <= 2)) {
+            if (bomb.getTimer() <= 90 && isInBlastRange(x, y, bomb.getX(), bomb.getY())) {
                 return false;
             }
         }
@@ -150,129 +184,145 @@ public class AIPlayer {
         return true;
     }
 
-    private boolean shouldPlaceBomb(int x, int y, Player player1, List<Bomb> bombs) {
-        // Ne pas placer de bombe s'il y en a déjà une ici
+    private boolean canSafelyPlaceBomb(int x, int y, Player player1, List<Bomb> bombs, List<Explosion> explosions) {
+        // Ne pas placer si il y a déjà une bombe
         if (hasBombAt(x, y, bombs)) {
             return false;
         }
 
-        // Ne pas placer de bombe si on est déjà en danger
-        if (isInImmediateDanger(x, y, bombs, new ArrayList<>())) {
+        // Ne pas placer si on est déjà en danger
+        if (isInDanger(x, y, bombs, explosions)) {
             return false;
         }
 
-        // Vérifier s'il y a des murs destructibles à proximité
-        int[] dx = {0, 1, 0, -1};
-        int[] dy = {-1, 0, 1, 0};
+        // Vérifier qu'on peut s'échapper après avoir placé la bombe
+        List<Bomb> futureBombs = new ArrayList<>(bombs);
+        futureBombs.add(new Bomb(x, y, 180)); // Simuler notre future bombe
 
-        for (int i = 0; i < 4; i++) {
-            for (int range = 1; range <= 2; range++) { // Portée de la bombe
-                int checkX = x + dx[i] * range;
-                int checkY = y + dy[i] * range;
+        AIAction escapeRoute = findBestEscapeRoute(x, y, futureBombs, explosions);
+        if (escapeRoute == null) {
+            return false; // Pas d'échappatoire
+        }
 
-                if (!grid.inBounds(checkX, checkY)) {
-                    break;
-                }
+        // Vérifier si c'est utile de placer une bombe
+        return isBombUseful(x, y, player1);
+    }
 
-                if (grid.isIndestructibleWall(checkX, checkY)) {
-                    break;
-                }
+    private boolean isBombUseful(int x, int y, Player player1) {
+        // Vérifier les murs destructibles à proximité
+        int[] dx = {-1, 1, 0, 0, -2, 2, 0, 0};
+        int[] dy = {0, 0, -1, 1, 0, 0, -2, 2};
 
-                if (grid.isDestructibleWall(checkX, checkY)) {
-                    return true; // Il y a un mur destructible à détruire
-                }
+        for (int i = 0; i < dx.length; i++) {
+            int checkX = x + dx[i];
+            int checkY = y + dy[i];
+
+            if (grid.inBounds(checkX, checkY) && grid.isDestructibleWall(checkX, checkY)) {
+                return true;
             }
         }
 
-        // Vérifier si le joueur 1 est à portée (mais pas trop proche)
-        if (player1 != null) {
+        // Vérifier si le joueur adverse est à portée (avec une certaine probabilité)
+        if (player1 != null && random.nextDouble() < 0.15) {
             int distance = Math.abs(player1.getX() - x) + Math.abs(player1.getY() - y);
-            if (distance >= 2 && distance <= 3) {
-                // Vérifier si le joueur 1 est dans la ligne d'explosion
-                if ((player1.getX() == x && Math.abs(player1.getY() - y) <= 2) ||
-                        (player1.getY() == y && Math.abs(player1.getX() - x) <= 2)) {
-                    return random.nextDouble() < 0.3; // 30% de chance d'attaquer
-                }
+            if (distance >= 2 && distance <= 4) {
+                return isInBlastRange(player1.getX(), player1.getY(), x, y);
             }
         }
 
         return false;
     }
 
-    private AIAction chooseMoveAction(int x, int y, Player player1, List<Bomb> bombs, List<Explosion> explosions) {
+    private AIAction chooseSmartMove(int x, int y, Player player1, List<Bomb> bombs, List<Explosion> explosions) {
         List<AIAction> possibleMoves = getPossibleMoves(x, y, bombs, explosions);
 
         if (possibleMoves.isEmpty()) {
             return null;
         }
 
-        // Si le joueur 1 est proche, essayer de s'en rapprocher ou de s'en éloigner
-        if (player1 != null && random.nextDouble() < 0.4) {
-            AIAction targetedMove = moveTowardsOrAwayFromPlayer(x, y, player1, possibleMoves);
-            if (targetedMove != null) {
-                return targetedMove;
+        // Stratégie basée sur la distance au joueur
+        if (player1 != null && random.nextDouble() < 0.6) {
+            int distance = Math.abs(player1.getX() - x) + Math.abs(player1.getY() - y);
+
+            if (distance <= 2) {
+                // Trop proche, s'éloigner
+                return moveAwayFromPlayer(x, y, player1, possibleMoves);
+            } else if (distance > 5) {
+                // Trop loin, se rapprocher
+                return moveTowardsPlayer(x, y, player1, possibleMoves);
             }
         }
 
-        // Sinon, mouvement aléatoirement
+        // Mouvement aléatoirement parmi les options sûres
         return possibleMoves.get(random.nextInt(possibleMoves.size()));
     }
 
-    private AIAction moveTowardsOrAwayFromPlayer(int x, int y, Player player1, List<AIAction> possibleMoves) {
+    private AIAction moveTowardsPlayer(int x, int y, Player player1, List<AIAction> possibleMoves) {
         int playerX = player1.getX();
         int playerY = player1.getY();
-        int distance = Math.abs(playerX - x) + Math.abs(playerY - y);
 
-        // Si trop proche (distance <= 2), s'éloigner
-        // Si assez loin (distance > 4), se rapprocher
-        boolean moveAway = distance <= 2;
-
-        List<AIAction> preferredMoves = new ArrayList<>();
+        AIAction bestMove = null;
+        int bestDistance = Integer.MAX_VALUE;
 
         for (AIAction move : possibleMoves) {
             int newX = x, newY = y;
-
             switch (move) {
                 case MOVE_LEFT -> newX--;
                 case MOVE_RIGHT -> newX++;
                 case MOVE_UP -> newY--;
                 case MOVE_DOWN -> newY++;
-                default -> {
-                    continue;
-                }
             }
 
-            int newDistance = Math.abs(playerX - newX) + Math.abs(playerY - newY);
-
-            if (moveAway && newDistance > distance) {
-                preferredMoves.add(move);
-            } else if (!moveAway && newDistance < distance) {
-                preferredMoves.add(move);
+            int distance = Math.abs(playerX - newX) + Math.abs(playerY - newY);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestMove = move;
             }
         }
 
-        if (!preferredMoves.isEmpty()) {
-            return preferredMoves.get(random.nextInt(preferredMoves.size()));
+        return bestMove;
+    }
+
+    private AIAction moveAwayFromPlayer(int x, int y, Player player1, List<AIAction> possibleMoves) {
+        int playerX = player1.getX();
+        int playerY = player1.getY();
+
+        AIAction bestMove = null;
+        int bestDistance = -1;
+
+        for (AIAction move : possibleMoves) {
+            int newX = x, newY = y;
+            switch (move) {
+                case MOVE_LEFT -> newX--;
+                case MOVE_RIGHT -> newX++;
+                case MOVE_UP -> newY--;
+                case MOVE_DOWN -> newY++;
+            }
+
+            int distance = Math.abs(playerX - newX) + Math.abs(playerY - newY);
+            if (distance > bestDistance) {
+                bestDistance = distance;
+                bestMove = move;
+            }
         }
 
-        return null;
+        return bestMove;
     }
 
     private List<AIAction> getPossibleMoves(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
         List<AIAction> moves = new ArrayList<>();
 
-        // Vérifier chaque direction
-        if (isSafePosition(x - 1, y, bombs, explosions)) {
-            moves.add(AIAction.MOVE_LEFT);
-        }
-        if (isSafePosition(x + 1, y, bombs, explosions)) {
-            moves.add(AIAction.MOVE_RIGHT);
-        }
-        if (isSafePosition(x, y - 1, bombs, explosions)) {
-            moves.add(AIAction.MOVE_UP);
-        }
-        if (isSafePosition(x, y + 1, bombs, explosions)) {
-            moves.add(AIAction.MOVE_DOWN);
+        int[] dx = {-1, 1, 0, 0};
+        int[] dy = {0, 0, -1, 1};
+        AIAction[] actions = {AIAction.MOVE_LEFT, AIAction.MOVE_RIGHT, AIAction.MOVE_UP, AIAction.MOVE_DOWN};
+
+        for (int i = 0; i < 4; i++) {
+            int newX = x + dx[i];
+            int newY = y + dy[i];
+
+            if (canMoveTo(newX, newY, bombs) && isSafeFromDanger(newX, newY, bombs, explosions)) {
+                moves.add(actions[i]);
+            }
         }
 
         return moves;
