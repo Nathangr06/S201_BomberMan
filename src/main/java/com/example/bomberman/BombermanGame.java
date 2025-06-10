@@ -81,6 +81,11 @@ public class BombermanGame {
     private int player2TargetX = 13;
     private int player2TargetY = 11;
 
+
+    //Variables pour le bot
+    private boolean aiMode = false;
+    private AIPlayer aiPlayer;
+
     // Positions visuelles fluides (en pixels) - ajustées pour le timer
     private double player1VisualX = 1 * TILE_SIZE;
     private double player1VisualY = 1 * TILE_SIZE + TIMER_HEIGHT;
@@ -188,6 +193,11 @@ public class BombermanGame {
         startGameLoop();
         gameRunning = true;
     }
+
+
+
+    public Player getPlayer1() { return player1; }
+    public Player getPlayer2() { return player2; }
 
     private void initializeGameWithDefaultLevel() {
         grid = new GameGrid(GRID_WIDTH, GRID_HEIGHT);
