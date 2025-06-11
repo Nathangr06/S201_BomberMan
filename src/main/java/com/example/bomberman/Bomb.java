@@ -3,7 +3,7 @@ package com.example.bomberman;
 public class Bomb {
     private int x, y;
     private int timer;
-    private int range = 2;
+    private int range = 1;
 
     public Bomb(int x, int y) {
         this.x = x;

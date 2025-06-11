@@ -127,10 +127,10 @@ public class BombermanGame {
     private static final double POWERUP_SPAWN_CHANCE = 0.3; // 30% de chance
 
     // Stats des joueurs avec power-ups
-    private int player1BombRange = 2;
-    private int player2BombRange = 2;
-    private int player3BombRange = 2;
-    private int player4BombRange = 2;
+    private int player1BombRange = 1;
+    private int player2BombRange = 1;
+    private int player3BombRange = 1;
+    private int player4BombRange = 1;
     private double player1Speed = MOVEMENT_SPEED;
     private double player2Speed = MOVEMENT_SPEED;
     private double player3Speed = MOVEMENT_SPEED;
@@ -423,10 +423,10 @@ public class BombermanGame {
     }
 
     private void resetPlayerPowerUps() {
-        player1BombRange = 2;
-        player2BombRange = 2;
-        player3BombRange = 2;
-        player4BombRange = 2;
+        player1BombRange = 1;
+        player2BombRange = 1;
+        player3BombRange = 1;
+        player4BombRange = 1;
         player1Speed = MOVEMENT_SPEED;
         player2Speed = MOVEMENT_SPEED;
         player3Speed = MOVEMENT_SPEED;
@@ -1124,13 +1124,13 @@ public class BombermanGame {
         return bombs.stream().anyMatch(b -> b.getX() == x && b.getY() == y);
     }
 
-    private void placeBomb(Player player) {
-        placeBomb(player, 2); // Portée par défaut
-    }
-
     private void placeBomb(Player player, int range) {
-        if (!hasBombAt(player.getX(), player.getY())) {
-            Bomb bomb = new Bomb(player.getX(), player.getY());
+        int playerX = player.getX();
+        int playerY = player.getY();
+
+        // Vérifier que la position est walkable (pas un mur) ET qu'il n'y a pas déjà une bombe
+        if (grid.isWalkable(playerX, playerY) && !hasBombAt(playerX, playerY)) {
+            Bomb bomb = new Bomb(playerX, playerY);
             bomb.setRange(range);
             bombs.add(bomb);
         }
