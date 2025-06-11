@@ -30,6 +30,14 @@
                 </Button>
 
 
+                <!-- Bouton Capture the Flag -->
+                <Button fx:id="captureTheFlagButton" mnemonicParsing="false" onAction="#handlePlayCaptureTheFlag" prefHeight="50.0" prefWidth="300.0" text="🏳️ CAPTURE THE FLAG" style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 15;">
+                    <font>
+                        <Font name="System Bold" size="18.0" />
+                    </font>
+                </Button>
+
+
                 <!-- Bouton Éditeur -->
                 <Button fx:id="editorButton" mnemonicParsing="false" onAction="#handleOpenEditor" prefHeight="50.0" prefWidth="300.0" text="🛠️ ÉDITEUR DE NIVEAUX">
                     <font>

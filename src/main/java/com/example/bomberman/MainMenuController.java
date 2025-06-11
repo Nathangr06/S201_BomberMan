@@ -471,6 +471,19 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    @FXML
+    private void handlePlayCaptureTheFlag() {
+        System.out.println("Capture The Flag mode launched");
+        Stage stage = new Stage();
+        CaptureTheFlag ctf = new CaptureTheFlag();
+        try {
+            ctf.start(stage);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     private void showNotification(String message, NotificationType type) {
         // Utiliser la console comme fallback si pas d'interface graphique disponible
         System.out.println(message);
