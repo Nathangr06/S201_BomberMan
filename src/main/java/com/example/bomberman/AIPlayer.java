@@ -1,379 +1,338 @@
 package com.example.bomberman;
 
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.image.Image;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.stage.Stage;
-import javafx.util.Duration;
-
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
-public class BombermanGame extends Application {
+public class AIPlayer {
 
-    public static final int TILE_SIZE = 40;
-    public static final int GRID_WIDTH = 15;
-    public static final int GRID_HEIGHT = 13;
-    public static final int CANVAS_WIDTH = GRID_WIDTH * TILE_SIZE;
-    public static final int CANVAS_HEIGHT = GRID_HEIGHT * TILE_SIZE;
-
-    private Canvas canvas;
-    private GraphicsContext gc;
-    private Timeline gameLoop;
-
-    private GameGrid grid;
-    private Player player1;
-    private Player player2;
-    private List<Bomb> bombs;
-    private List<Explosion> explosions;
-    private TextureManager textureManager;
-
-    private InputHandler inputHandler;
-
-    private double player1PixelX, player1PixelY;
-    private double player2PixelX, player2PixelY;
-    private double playerSpeed = 2.0;
-    private boolean isPlayer1Moving = false;
-    private boolean isPlayer2Moving = false;
-    private int player1TargetX, player1TargetY;
-    private int player2TargetX, player2TargetY;
-
-    private Flag flag1, flag2;
-    private boolean player1HasFlag = false;
-    private boolean player2HasFlag = false;
-    private boolean captureTheFlagMode = true; // pour activer/désactiver le mode
-    private boolean player1Alive = true;
-    private boolean player2Alive = true;
-
-    @Override
-    public void start(Stage primaryStage) {
-        initializeGame();
-
-        canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-        gc = canvas.getGraphicsContext2D();
-
-        VBox root = new VBox(canvas);
-        Scene scene = new Scene(root);
-
-        inputHandler = new InputHandler(scene);
-
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Bomberman");
-        primaryStage.setResizable(false);
-        primaryStage.show();
-
-        canvas.requestFocus();
-
-        startGameLoop();
+    public enum AIAction {
+        MOVE_LEFT, MOVE_RIGHT, MOVE_UP, MOVE_DOWN, PLACE_BOMB, WAIT
     }
 
-    private void initializeGame() {
-        textureManager = TextureManager.getInstance();
+    private final GameGrid grid;
+    private final BombermanGame game;
+    private final Random random;
+    private long lastActionTime = 0;
+    private static final long ACTION_COOLDOWN = 200_000_000; // 200ms entre les actions
+    private boolean justPlacedBomb = false;
+    private int lastBombX = -1, lastBombY = -1;
 
-        grid = new GameGrid(GRID_WIDTH, GRID_HEIGHT);
-        grid.generate();
-
-        player1 = new Player(1, 1);
-        player2 = new Player(13, 11);
-
-        player1PixelX = player1.getX() * TILE_SIZE;
-        player1PixelY = player1.getY() * TILE_SIZE;
-        player1TargetX = player1.getX();
-        player1TargetY = player1.getY();
-
-        player2PixelX = player2.getX() * TILE_SIZE;
-        player2PixelY = player2.getY() * TILE_SIZE;
-        player2TargetX = player2.getX();
-        player2TargetY = player2.getY();
-
-        bombs = new java.util.ArrayList<>();
-        explosions = new java.util.ArrayList<>();
-
-        if (captureTheFlagMode) {
-            flag1 = new Flag(player1.getX(), player1.getY());
-            flag2 = new Flag(player2.getX(), player2.getY());
-        }
+    public AIPlayer(GameGrid grid, BombermanGame game) {
+        this.grid = grid;
+        this.game = game;
+        this.random = new Random();
     }
 
-    private void startGameLoop() {
-        gameLoop = new Timeline(new KeyFrame(Duration.millis(16), e -> {
-            update();
-            render();
-        }));
-        gameLoop.setCycleCount(Animation.INDEFINITE);
-        gameLoop.play();
-    }
+    public AIAction getNextAction(List<Bomb> bombs, List<Explosion> explosions) {
+        long currentTime = System.nanoTime();
 
-    private void update() {
-        handleInput();
-        updatePlayerMovement();
-        updateBombs();
-        updateExplosions();
-        checkPlayerExplosionCollision();
-
-        if (captureTheFlagMode) {
-            if (!flag2.isCaptured() && player1.getX() == flag2.getX() && player1.getY() == flag2.getY()) {
-                player1HasFlag = true;
-                flag2.setCaptured(true);
-            }
-            if (!flag1.isCaptured() && player2.getX() == flag1.getX() && player2.getY() == flag1.getY()) {
-                player2HasFlag = true;
-                flag1.setCaptured(true);
-            }
-
-            if (player1HasFlag && player1.getX() == flag1.getX() && player1.getY() == flag1.getY() && player1Alive) {
-                endGame("Joueur 1 a capturé le drapeau et a gagné !");
-            }
-            if (player2HasFlag && player2.getX() == flag2.getX() && player2.getY() == flag2.getY() && player2Alive) {
-                endGame("Joueur 2 a capturé le drapeau et a gagné !");
-            }
-        }
-    }
-
-    private void handleInput() {
-        if (player1Alive && !isPlayer1Moving) {
-            int newX = player1TargetX;
-            int newY = player1TargetY;
-            if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.LEFT)) newX--;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.RIGHT)) newX++;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.UP)) newY--;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.DOWN)) newY++;
-
-            if ((newX != player1TargetX || newY != player1TargetY) && grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
-                player1TargetX = newX;
-                player1TargetY = newY;
-                isPlayer1Moving = true;
-            }
+        // Cooldown entre les actions
+        if (currentTime - lastActionTime < ACTION_COOLDOWN) {
+            return AIAction.WAIT;
         }
 
-        if (player2Alive && !isPlayer2Moving) {
-            int newX = player2TargetX;
-            int newY = player2TargetY;
-            if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Q)) newX--;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.D)) newX++;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Z)) newY--;
-            else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.S)) newY++;
+        Player player2 = game.getPlayer2();
+        Player player1 = game.getPlayer1();
 
-            if ((newX != player2TargetX || newY != player2TargetY) && grid.isWalkable(newX, newY) && !hasBombAt(newX, newY)) {
-                player2TargetX = newX;
-                player2TargetY = newY;
-                isPlayer2Moving = true;
+        if (player2 == null) return AIAction.WAIT;
+
+        int x = player2.getX();
+        int y = player2.getY();
+
+        // Vérifier si on vient de placer une bombe
+        if (justPlacedBomb && hasBombAt(lastBombX, lastBombY, bombs)) {
+            // On est encore sur notre bombe, il faut absolument s'enfuir
+            AIAction escapeAction = findBestEscapeRoute(x, y, bombs, explosions);
+            if (escapeAction != null) {
+                lastActionTime = currentTime;
+                return escapeAction;
             }
-        }
-
-        // Les joueurs peuvent poser des bombes même morts (mode CTF)
-        if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.ENTER)) {
-            placeBomb(player1);
-            inputHandler.setKeyReleased(javafx.scene.input.KeyCode.ENTER);
-        }
-
-        if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.B)) {
-            placeBomb(player2);
-            inputHandler.setKeyReleased(javafx.scene.input.KeyCode.B);
-        }
-    }
-
-    private void updatePlayerMovement() {
-        if (isPlayer1Moving) {
-            double targetX = player1TargetX * TILE_SIZE;
-            double targetY = player1TargetY * TILE_SIZE;
-            double dx = targetX - player1PixelX;
-            double dy = targetY - player1PixelY;
-            double distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance <= playerSpeed) {
-                player1PixelX = targetX;
-                player1PixelY = targetY;
-                player1.setPosition(player1TargetX, player1TargetY);
-                isPlayer1Moving = false;
-            } else {
-                player1PixelX += (dx / distance) * playerSpeed;
-                player1PixelY += (dy / distance) * playerSpeed;
-            }
-        }
-
-        if (isPlayer2Moving) {
-            double targetX = player2TargetX * TILE_SIZE;
-            double targetY = player2TargetY * TILE_SIZE;
-            double dx = targetX - player2PixelX;
-            double dy = targetY - player2PixelY;
-            double distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance <= playerSpeed) {
-                player2PixelX = targetX;
-                player2PixelY = targetY;
-                player2.setPosition(player2TargetX, player2TargetY);
-                isPlayer2Moving = false;
-            } else {
-                player2PixelX += (dx / distance) * playerSpeed;
-                player2PixelY += (dy / distance) * playerSpeed;
-            }
-        }
-    }
-
-    private void placeBomb(Player player) {
-        int x = player.getX();
-        int y = player.getY();
-        if (!hasBombAt(x, y)) {
-            bombs.add(new Bomb(x, y));
-        }
-    }
-
-    private boolean hasBombAt(int x, int y) {
-        return bombs.stream().anyMatch(b -> b.getX() == x && b.getY() == y);
-    }
-
-    private void updateBombs() {
-        var iterator = bombs.iterator();
-        while (iterator.hasNext()) {
-            Bomb bomb = iterator.next();
-            bomb.decreaseTimer();
-            if (bomb.isExploded()) {
-                explodeBomb(bomb);
-                iterator.remove();
-            }
-        }
-    }
-
-    private void explodeBomb(Bomb bomb) {
-        int range = 2;
-        explosions.add(new Explosion(bomb.getX(), bomb.getY(), 60));
-
-        int[] dx = {0, 1, 0, -1};
-        int[] dy = {-1, 0, 1, 0};
-
-        for (int dir = 0; dir < 4; dir++) {
-            for (int i = 1; i <= range; i++) {
-                int x = bomb.getX() + dx[dir] * i;
-                int y = bomb.getY() + dy[dir] * i;
-
-                if (!grid.inBounds(x, y)) break;
-                if (grid.isIndestructibleWall(x, y)) break;
-
-                explosions.add(new Explosion(x, y, 60));
-
-                if (grid.isDestructibleWall(x, y)) {
-                    grid.setEmpty(x, y);
-                    break;
-                }
-            }
-        }
-    }
-
-    private void updateExplosions() {
-        explosions.removeIf(Explosion::decreaseTimerAndCheck);
-    }
-
-    private void checkPlayerExplosionCollision() {
-        int p1X = player1.getX();
-        int p1Y = player1.getY();
-        int p2X = player2.getX();
-        int p2Y = player2.getY();
-
-        for (Explosion explosion : explosions) {
-            int ex = explosion.getX();
-            int ey = explosion.getY();
-
-            if (player1Alive && ex == p1X && ey == p1Y) {
-                player1Alive = false;
-                if (player1HasFlag) endGame("Joueur 1 est mort avec le drapeau !");
-            }
-
-            if (player2Alive && ex == p2X && ey == p2Y) {
-                player2Alive = false;
-                if (player2HasFlag) endGame("Joueur 2 est mort avec le drapeau !");
-            }
-        }
-    }
-
-    private void endGame(String message) {
-        gameLoop.stop();
-        System.out.println("Fin de partie : " + message);
-    }
-
-    private void render() {
-        gc.setFill(Color.DARKGREEN);
-        gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        grid.render(gc);
-
-        // Affichage des drapeaux si mode CTF activé
-        if (captureTheFlagMode) {
-            Image flagTextureJ1 = textureManager.getTexture("Flag_J1");
-            Image flagTextureJ2 = textureManager.getTexture("Flag_J2");
-
-            if (!flag1.isCaptured()) {
-                if (flagTextureJ1 != null) {
-                    gc.drawImage(flagTextureJ1, flag1.getX() * TILE_SIZE, flag1.getY() * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                } else {
-                    gc.setFill(Color.YELLOW);
-                    gc.fillRect(flag1.getX() * TILE_SIZE + 10, flag1.getY() * TILE_SIZE + 10, 20, 20);
-                }
-            }
-
-            if (!flag2.isCaptured()) {
-                if (flagTextureJ2 != null) {
-                    gc.drawImage(flagTextureJ2, flag2.getX() * TILE_SIZE, flag2.getY() * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                } else {
-                    gc.setFill(Color.YELLOW);
-                    gc.fillRect(flag2.getX() * TILE_SIZE + 10, flag2.getY() * TILE_SIZE + 10, 20, 20);
-                }
-            }
-        }
-
-        Image explosionTexture = textureManager.getTexture("explosion");
-        for (Explosion explosion : explosions) {
-            int x = explosion.getX() * TILE_SIZE;
-            int y = explosion.getY() * TILE_SIZE;
-            if (explosionTexture != null) {
-                gc.drawImage(explosionTexture, x, y, TILE_SIZE, TILE_SIZE);
-            } else {
-                gc.setFill(Color.ORANGE);
-                gc.fillRect(x + 5, y + 5, TILE_SIZE - 10, TILE_SIZE - 10);
-            }
-        }
-
-        Image bombTexture = textureManager.getTexture("bomb");
-        for (Bomb bomb : bombs) {
-            int x = bomb.getX() * TILE_SIZE;
-            int y = bomb.getY() * TILE_SIZE;
-            if (bombTexture != null) {
-                gc.drawImage(bombTexture, x, y, TILE_SIZE, TILE_SIZE);
-            } else {
-                gc.setFill(Color.BLACK);
-                gc.fillOval(x + 8, y + 8, TILE_SIZE - 16, TILE_SIZE - 16);
-            }
-        }
-
-        Image playerTexture = textureManager.getTexture("player");
-        Image player2Texture = textureManager.getTexture("player2");
-        if (playerTexture != null) {
-            gc.drawImage(playerTexture, player1PixelX, player1PixelY, TILE_SIZE, TILE_SIZE);
-            gc.drawImage(player2Texture, player2PixelX, player2PixelY, TILE_SIZE, TILE_SIZE);
         } else {
-            gc.setFill(Color.BLUE);
-            gc.fillOval(player1PixelX + 5, player1PixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
-            gc.setFill(Color.RED);
-            gc.fillOval(player2PixelX + 5, player2PixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+            // Reset du flag si la bombe a explosé ou n'existe plus
+            justPlacedBomb = false;
         }
 
-        // Indiquer si un joueur a le drapeau (petit carré sur le joueur)
-        if (player1HasFlag && player1Alive) {
-            gc.setFill(Color.YELLOW);
-            gc.fillRect(player1PixelX + TILE_SIZE / 3, player1PixelY + TILE_SIZE / 3, TILE_SIZE / 3, TILE_SIZE / 3);
+        // PRIORITÉ 1: Échapper au danger immédiat
+        if (isInDanger(x, y, bombs, explosions)) {
+            AIAction escapeAction = findBestEscapeRoute(x, y, bombs, explosions);
+            if (escapeAction != null) {
+                lastActionTime = currentTime;
+                return escapeAction;
+            }
         }
-        if (player2HasFlag && player2Alive) {
-            gc.setFill(Color.YELLOW);
-            gc.fillRect(player2PixelX + TILE_SIZE / 3, player2PixelY + TILE_SIZE / 3, TILE_SIZE / 3, TILE_SIZE / 3);
+
+        // PRIORITÉ 2: Placer une bombe si c'est sûr et utile
+        if (canSafelyPlaceBomb(x, y, player1, bombs, explosions)) {
+            justPlacedBomb = true;
+            lastBombX = x;
+            lastBombY = y;
+            lastActionTime = currentTime;
+            return AIAction.PLACE_BOMB;
         }
+
+        // PRIORITÉ 3: Se déplacer intelligemment
+        AIAction moveAction = chooseSmartMove(x, y, player1, bombs, explosions);
+        if (moveAction != null) {
+            lastActionTime = currentTime;
+            return moveAction;
+        }
+
+        return AIAction.WAIT;
     }
 
+    private boolean isInDanger(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
+        // Danger immédiat des explosions
+        for (Explosion explosion : explosions) {
+            if (explosion.getX() == x && explosion.getY() == y) {
+                return true;
+            }
+        }
 
-    public static void main(String[] args) {
-        launch(args);
+        // Danger des bombes qui vont exploser
+        for (Bomb bomb : bombs) {
+            if (bomb.getTimer() <= 60) { // Plus de marge
+                if (isInBlastRange(x, y, bomb.getX(), bomb.getY())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isInBlastRange(int x, int y, int bombX, int bombY) {
+        // Même ligne horizontale
+        if (y == bombY && Math.abs(x - bombX) <= 2) {
+            return true;
+        }
+        // Même ligne verticale
+        if (x == bombX && Math.abs(y - bombY) <= 2) {
+            return true;
+        }
+        return false;
+    }
+
+    private AIAction findBestEscapeRoute(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
+        // Directions possibles
+        int[] dx = {-1, 1, 0, 0};
+        int[] dy = {0, 0, -1, 1};
+        AIAction[] actions = {AIAction.MOVE_LEFT, AIAction.MOVE_RIGHT, AIAction.MOVE_UP, AIAction.MOVE_DOWN};
+
+        List<AIAction> safeMoves = new ArrayList<>();
+        List<AIAction> lessUnsafeMoves = new ArrayList<>();
+
+        for (int i = 0; i < 4; i++) {
+            int newX = x + dx[i];
+            int newY = y + dy[i];
+
+            if (canMoveTo(newX, newY, bombs)) {
+                if (isSafeFromDanger(newX, newY, bombs, explosions)) {
+                    safeMoves.add(actions[i]);
+                } else if (!isInExplosion(newX, newY, explosions)) {
+                    // Pas parfaitement sûr mais mieux que rester dans une explosion
+                    lessUnsafeMoves.add(actions[i]);
+                }
+            }
+        }
+
+        // Prioriser les mouvements complètement sûrs
+        if (!safeMoves.isEmpty()) {
+            return safeMoves.get(random.nextInt(safeMoves.size()));
+        }
+
+        // Sinon, prendre le moins dangereux
+        if (!lessUnsafeMoves.isEmpty()) {
+            return lessUnsafeMoves.get(random.nextInt(lessUnsafeMoves.size()));
+        }
+
+        return null;
+    }
+
+    private boolean canMoveTo(int x, int y, List<Bomb> bombs) {
+        // Vérifier les limites
+        if (!grid.inBounds(x, y)) {
+            return false;
+        }
+
+        // Vérifier les murs
+        if (grid.isIndestructibleWall(x, y) || grid.isDestructibleWall(x, y)) {
+            return false;
+        }
+
+        // Vérifier les bombes (on peut passer sur une bombe qu'on vient de placer)
+        if (hasBombAt(x, y, bombs) && !(justPlacedBomb && x == lastBombX && y == lastBombY)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isSafeFromDanger(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
+        // Pas dans une explosion
+        if (isInExplosion(x, y, explosions)) {
+            return false;
+        }
+
+        // Pas dans le rayon d'une bombe dangereuse
+        for (Bomb bomb : bombs) {
+            if (bomb.getTimer() <= 90 && isInBlastRange(x, y, bomb.getX(), bomb.getY())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean canSafelyPlaceBomb(int x, int y, Player player1, List<Bomb> bombs, List<Explosion> explosions) {
+        // Ne pas placer si il y a déjà une bombe
+        if (hasBombAt(x, y, bombs)) {
+            return false;
+        }
+
+        // Ne pas placer si on est déjà en danger
+        if (isInDanger(x, y, bombs, explosions)) {
+            return false;
+        }
+
+        // Vérifier qu'on peut s'échapper après avoir placé la bombe
+        List<Bomb> futureBombs = new ArrayList<>(bombs);
+        futureBombs.add(new Bomb(x, y, 180)); // Simuler notre future bombe
+
+        AIAction escapeRoute = findBestEscapeRoute(x, y, futureBombs, explosions);
+        if (escapeRoute == null) {
+            return false; // Pas d'échappatoire
+        }
+
+        // Vérifier si c'est utile de placer une bombe
+        return isBombUseful(x, y, player1);
+    }
+
+    private boolean isBombUseful(int x, int y, Player player1) {
+        // Vérifier les murs destructibles à proximité
+        int[] dx = {-1, 1, 0, 0, -2, 2, 0, 0};
+        int[] dy = {0, 0, -1, 1, 0, 0, -2, 2};
+
+        for (int i = 0; i < dx.length; i++) {
+            int checkX = x + dx[i];
+            int checkY = y + dy[i];
+
+            if (grid.inBounds(checkX, checkY) && grid.isDestructibleWall(checkX, checkY)) {
+                return true;
+            }
+        }
+
+        // Vérifier si le joueur adverse est à portée (avec une certaine probabilité)
+        if (player1 != null && random.nextDouble() < 0.15) {
+            int distance = Math.abs(player1.getX() - x) + Math.abs(player1.getY() - y);
+            if (distance >= 2 && distance <= 4) {
+                return isInBlastRange(player1.getX(), player1.getY(), x, y);
+            }
+        }
+
+        return false;
+    }
+
+    private AIAction chooseSmartMove(int x, int y, Player player1, List<Bomb> bombs, List<Explosion> explosions) {
+        List<AIAction> possibleMoves = getPossibleMoves(x, y, bombs, explosions);
+
+        if (possibleMoves.isEmpty()) {
+            return null;
+        }
+
+        // Stratégie basée sur la distance au joueur
+        if (player1 != null && random.nextDouble() < 0.6) {
+            int distance = Math.abs(player1.getX() - x) + Math.abs(player1.getY() - y);
+
+            if (distance <= 2) {
+                // Trop proche, s'éloigner
+                return moveAwayFromPlayer(x, y, player1, possibleMoves);
+            } else if (distance > 5) {
+                // Trop loin, se rapprocher
+                return moveTowardsPlayer(x, y, player1, possibleMoves);
+            }
+        }
+
+        // Mouvement aléatoirement parmi les options sûres
+        return possibleMoves.get(random.nextInt(possibleMoves.size()));
+    }
+
+    private AIAction moveTowardsPlayer(int x, int y, Player player1, List<AIAction> possibleMoves) {
+        int playerX = player1.getX();
+        int playerY = player1.getY();
+
+        AIAction bestMove = null;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (AIAction move : possibleMoves) {
+            int newX = x, newY = y;
+            switch (move) {
+                case MOVE_LEFT -> newX--;
+                case MOVE_RIGHT -> newX++;
+                case MOVE_UP -> newY--;
+                case MOVE_DOWN -> newY++;
+            }
+
+            int distance = Math.abs(playerX - newX) + Math.abs(playerY - newY);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestMove = move;
+            }
+        }
+
+        return bestMove;
+    }
+
+    private AIAction moveAwayFromPlayer(int x, int y, Player player1, List<AIAction> possibleMoves) {
+        int playerX = player1.getX();
+        int playerY = player1.getY();
+
+        AIAction bestMove = null;
+        int bestDistance = -1;
+
+        for (AIAction move : possibleMoves) {
+            int newX = x, newY = y;
+            switch (move) {
+                case MOVE_LEFT -> newX--;
+                case MOVE_RIGHT -> newX++;
+                case MOVE_UP -> newY--;
+                case MOVE_DOWN -> newY++;
+            }
+
+            int distance = Math.abs(playerX - newX) + Math.abs(playerY - newY);
+            if (distance > bestDistance) {
+                bestDistance = distance;
+                bestMove = move;
+            }
+        }
+
+        return bestMove;
+    }
+
+    private List<AIAction> getPossibleMoves(int x, int y, List<Bomb> bombs, List<Explosion> explosions) {
+        List<AIAction> moves = new ArrayList<>();
+
+        int[] dx = {-1, 1, 0, 0};
+        int[] dy = {0, 0, -1, 1};
+        AIAction[] actions = {AIAction.MOVE_LEFT, AIAction.MOVE_RIGHT, AIAction.MOVE_UP, AIAction.MOVE_DOWN};
+
+        for (int i = 0; i < 4; i++) {
+            int newX = x + dx[i];
+            int newY = y + dy[i];
+
+            if (canMoveTo(newX, newY, bombs) && isSafeFromDanger(newX, newY, bombs, explosions)) {
+                moves.add(actions[i]);
+            }
+        }
+
+        return moves;
+    }
+
+    private boolean hasBombAt(int x, int y, List<Bomb> bombs) {
+        return bombs.stream().anyMatch(bomb -> bomb.getX() == x && bomb.getY() == y);
+    }
+
+    private boolean isInExplosion(int x, int y, List<Explosion> explosions) {
+        return explosions.stream().anyMatch(explosion -> explosion.getX() == x && explosion.getY() == y);
     }
 }
