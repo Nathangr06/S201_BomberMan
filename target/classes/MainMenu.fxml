@@ -29,7 +29,6 @@
                     </font>
                 </Button>
 
-
                 <!-- Bouton Éditeur -->
                 <Button fx:id="editorButton" mnemonicParsing="false" onAction="#handleOpenEditor" prefHeight="50.0" prefWidth="300.0" text="🛠️ ÉDITEUR DE NIVEAUX">
                     <font>
@@ -38,6 +37,19 @@
                 </Button>
 
                 <Button fx:id="playAIButton" mnemonicParsing="false" onAction="#handlePlayAI" prefHeight="50.0" prefWidth="200.0" text="🤖 Jouer contre l'IA" />
+
+                <!-- Section Texture Pack -->
+                <VBox alignment="CENTER" spacing="15.0" style="-fx-border-color: rgba(255,255,255,0.3); -fx-border-radius: 15; -fx-padding: 20;">
+
+                    <Label fx:id="texturePackLabel" text="🎨 TEXTURE PACK" textFill="WHITE">
+                        <font>
+                            <Font name="System Bold" size="16.0" />
+                        </font>
+                    </Label>
+
+                    <ComboBox fx:id="texturePackComboBox" prefHeight="40.0" prefWidth="250.0" promptText="Choisir un style graphique"/>
+
+                </VBox>
 
                 <!-- Section Carte Personnalisée -->
                 <VBox alignment="CENTER" spacing="15.0" style="-fx-border-color: rgba(255,255,255,0.3); -fx-border-radius: 15; -fx-padding: 20;">
