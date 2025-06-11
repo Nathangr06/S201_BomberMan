@@ -2,7 +2,10 @@
 package com.example.bomberman;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PlayerProfileManager {
     private static final String FILE_PATH = "profiles.dat";
