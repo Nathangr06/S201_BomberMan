@@ -15,37 +15,73 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Éditeur de niveaux pour le jeu Bomberman.
+ * Permet de créer, sauvegarder et charger des niveaux via une interface graphique.
+ */
 public class BombermanLevelEditor extends Application {
 
-    // Types d'éléments du niveau
+    /**
+     * Types d'éléments pouvant composer une cellule du niveau.
+     */
     public enum CellType {
+        /** Cellule vide */
         EMPTY("Vide", Color.LIGHTGRAY),
+        /** Mur indestructible */
         WALL("Mur", Color.GREY),
+        /** Mur destructible */
         DESTRUCTIBLE_WALL("Mur Destructible", Color.BROWN),
+        /** Position de spawn du joueur */
         PLAYER_SPAWN("Spawn Joueur", Color.BLUE);
 
         private final String name;
         private final Color color;
 
+        /**
+         * Constructeur de CellType.
+         * @param name Nom affiché dans l'interface
+         * @param color Couleur associée à ce type de cellule
+         */
         CellType(String name, Color color) {
             this.name = name;
             this.color = color;
         }
 
+        /**
+         * Retourne le nom affiché du type.
+         * @return Nom du type
+         */
         public String getName() { return name; }
+
+        /**
+         * Retourne la couleur associée au type.
+         * @return Couleur du type
+         */
         public Color getColor() { return color; }
     }
 
+    /** Nombre de lignes de la grille */
     private static final int GRID_ROWS = 13;
+    /** Nombre de colonnes de la grille */
     private static final int GRID_COLS = 15;
+    /** Taille d'une cellule en pixels */
     private static final int CELL_SIZE = 30;
 
+    /** Grille représentant les types de chaque cellule */
     private CellType[][] grid = new CellType[GRID_ROWS][GRID_COLS];
+    /** Tableaux des rectangles graphiques affichés */
     private Rectangle[][] gridRectangles = new Rectangle[GRID_ROWS][GRID_COLS];
+    /** Outil actuellement sélectionné */
     private CellType selectedTool;
+    /** Label affichant le statut */
     private Label statusLabel;
+    /** Sélecteur d'outil */
     private ComboBox<CellType> toolSelector;
 
+    /**
+     * Point d'entrée JavaFX : initialise et affiche l'interface.
+     * @param primaryStage fenêtre principale
+     */
     @Override
     public void start(Stage primaryStage) {
         initializeGrid();
@@ -71,6 +107,9 @@ public class BombermanLevelEditor extends Application {
         primaryStage.show();
     }
 
+    /**
+     * Initialise la grille avec des cellules vides et l'outil sélectionné par défaut.
+     */
     private void initializeGrid() {
         grid = new CellType[GRID_ROWS][GRID_COLS];
         gridRectangles = new Rectangle[GRID_ROWS][GRID_COLS];
@@ -84,6 +123,10 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Crée la barre d'outils avec sélection d'outil et boutons d'action.
+     * @return conteneur HBox avec les outils
+     */
     private HBox createToolPanel() {
         HBox toolPanel = new HBox(10);
         toolPanel.setPadding(new Insets(10));
@@ -117,6 +160,10 @@ public class BombermanLevelEditor extends Application {
         return toolPanel;
     }
 
+    /**
+     * Crée la grille graphique de jeu où l'utilisateur peut placer des éléments.
+     * @return GridPane représentant la grille de jeu
+     */
     private GridPane createGameGrid() {
         GridPane gameGrid = new GridPane();
         gameGrid.setAlignment(Pos.CENTER);
@@ -134,6 +181,7 @@ public class BombermanLevelEditor extends Application {
                 final int r = i;
                 final int c = j;
 
+                // Gestion du clic souris pour placer ou effacer
                 cell.setOnMouseClicked(e -> {
                     switch (e.getButton()) {
                         case PRIMARY:
@@ -147,7 +195,7 @@ public class BombermanLevelEditor extends Application {
                     updateStatus();
                 });
 
-                // Effet de survol
+                // Effet visuel au survol de la souris
                 cell.setOnMouseEntered(e -> {
                     if (!cell.getFill().equals(selectedTool.getColor())) {
                         cell.setOpacity(0.7);
@@ -164,13 +212,17 @@ public class BombermanLevelEditor extends Application {
         return gameGrid;
     }
 
+    /**
+     * Crée le panneau d'affichage du statut et de la légende des couleurs.
+     * @return VBox contenant les informations de statut et la légende
+     */
     private VBox createStatusPanel() {
         VBox statusPanel = new VBox(5);
         statusPanel.setPadding(new Insets(10));
 
         statusLabel = new Label("Prêt - Clic gauche: placer, Clic droit: effacer");
 
-        // Légende des couleurs
+        // Légende des couleurs pour chaque type de cellule
         HBox legend = new HBox(15);
         legend.setAlignment(Pos.CENTER);
 
@@ -193,10 +245,15 @@ public class BombermanLevelEditor extends Application {
         return statusPanel;
     }
 
+    /**
+     * Place l'outil sélectionné à la position spécifiée dans la grille.
+     * Si l'outil est un spawn joueur, supprime les autres spawns existants.
+     * @param row ligne de la cellule
+     * @param col colonne de la cellule
+     */
     private void placeTool(int row, int col) {
-        // Vérifier les contraintes spéciales
         if (selectedTool == CellType.PLAYER_SPAWN) {
-            // Un seul spawn joueur autorisé
+            // Un seul spawn joueur autorisé, suppression des existants
             removeExistingType(CellType.PLAYER_SPAWN);
         }
 
@@ -204,6 +261,10 @@ public class BombermanLevelEditor extends Application {
         updateCell(row, col);
     }
 
+    /**
+     * Supprime toutes les occurrences d'un type donné dans la grille en les remplaçant par vide.
+     * @param type type de cellule à supprimer
+     */
     private void removeExistingType(CellType type) {
         for (int i = 0; i < GRID_ROWS; i++) {
             for (int j = 0; j < GRID_COLS; j++) {
@@ -215,11 +276,19 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Met à jour graphiquement une cellule spécifique en fonction de son type.
+     * @param row ligne de la cellule
+     * @param col colonne de la cellule
+     */
     private void updateCell(int row, int col) {
         System.out.println("Mise à jour cellule [" + row + "," + col + "] -> " + grid[row][col]);
         gridRectangles[row][col].setFill(grid[row][col].getColor());
     }
 
+    /**
+     * Vide entièrement la grille en remettant toutes les cellules à vide.
+     */
     private void clearGrid() {
         for (int i = 0; i < GRID_ROWS; i++) {
             for (int j = 0; j < GRID_COLS; j++) {
@@ -230,6 +299,9 @@ public class BombermanLevelEditor extends Application {
         updateStatus();
     }
 
+    /**
+     * Met à jour le label de statut avec le compte des différents éléments présents.
+     */
     private void updateStatus() {
         int walls = 0, destructibleWalls = 0, enemies = 0, powerUps = 0;
         boolean hasPlayerSpawn = false;
@@ -250,6 +322,10 @@ public class BombermanLevelEditor extends Application {
         ));
     }
 
+    /**
+     * Ouvre une boîte de dialogue pour sauvegarder le niveau dans un fichier.
+     * Le format sauvegardé est simple CSV d'indices des CellType.
+     */
     private void saveLevel() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Sauvegarder le niveau");
@@ -275,6 +351,10 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Ouvre une boîte de dialogue pour charger un niveau depuis un fichier.
+     * Vérifie la compatibilité de la taille avant chargement.
+     */
     private void loadLevel() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Charger un niveau");
@@ -313,6 +393,11 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Affiche une boîte d'alerte d'information avec un titre et un message.
+     * @param title Titre de la fenêtre d'alerte
+     * @param message Message à afficher
+     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -321,6 +406,10 @@ public class BombermanLevelEditor extends Application {
         alert.showAndWait();
     }
 
+    /**
+     * Point d'entrée principal pour lancer l'application.
+     * @param args arguments de la ligne de commande
+     */
     public static void main(String[] args) {
         launch(args);
     }

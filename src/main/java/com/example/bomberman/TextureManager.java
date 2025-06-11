@@ -7,12 +7,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Gestionnaire singleton des textures utilisées dans le jeu Bomberman.
+ *
+ * <p>Cette classe charge et stocke les textures graphiques à partir de packs de textures,
+ * permet de sélectionner un pack actif, et fournit des méthodes pour récupérer les textures.
+ * En cas d'absence de fichiers, des textures par défaut programmées sont utilisées.</p>
+ */
 public class TextureManager {
+
+    /** Instance unique du gestionnaire (pattern singleton). */
     private static TextureManager instance;
+
+    /** Map contenant les textures chargées, identifiées par un nom clé. */
     private Map<String, Image> textures;
+
+    /** Nom du pack de textures actuellement chargé. */
     private String currentTexturePack = "default";
+
+    /** Liste des packs de textures disponibles. */
     private List<String> availableTexturePacks;
 
+    /**
+     * Constructeur privé (singleton).
+     * Initialise les structures, scanne les packs disponibles, et charge le pack par défaut.
+     */
     TextureManager() {
         textures = new HashMap<>();
         availableTexturePacks = new ArrayList<>();
@@ -20,6 +39,11 @@ public class TextureManager {
         loadTextures("default");
     }
 
+    /**
+     * Retourne l'instance unique du gestionnaire de textures.
+     *
+     * @return instance unique de TextureManager
+     */
     public static TextureManager getInstance() {
         if (instance == null) {
             instance = new TextureManager();
@@ -28,7 +52,9 @@ public class TextureManager {
     }
 
     /**
-     * Scanne les texture packs disponibles dans le dossier resources/texturepacks/
+     * Scanne les packs de textures disponibles dans le dossier resources/texturepacks/.
+     *
+     * <p>Ajoute à la liste les packs valides détectés, en s'assurant que le pack "default" est toujours présent.</p>
      */
     private void scanAvailableTexturePacks() {
         String[] potentialPacks = {"default","textures2"};
@@ -40,7 +66,6 @@ public class TextureManager {
             }
         }
 
-        // Assurer qu'au moins le pack par défaut est disponible (créé programmatiquement)
         if (!availableTexturePacks.contains("default")) {
             availableTexturePacks.add("default");
         }
@@ -49,11 +74,14 @@ public class TextureManager {
     }
 
     /**
-     * Vérifie si un texture pack est disponible en testant la présence des fichiers requis
+     * Vérifie la disponibilité d'un pack de textures en contrôlant la présence des fichiers requis.
+     *
+     * @param packName nom du pack à vérifier
+     * @return true si tous les fichiers requis sont présents, false sinon
      */
     private boolean isTexturePackAvailable(String packName) {
         if (packName.equals("default")) {
-            return true; // Le pack par défaut est toujours disponible (créé programmatiquement)
+            return true; // Le pack par défaut est toujours disponible
         }
 
         String basePath = "/texturepacks/" + packName + "/";
@@ -71,14 +99,19 @@ public class TextureManager {
     }
 
     /**
-     * Retourne la liste des texture packs disponibles
+     * Retourne une copie de la liste des packs de textures disponibles.
+     *
+     * @return liste des noms des packs disponibles
      */
     public List<String> getAvailableTexturePacks() {
         return new ArrayList<>(availableTexturePacks);
     }
 
     /**
-     * Retourne le nom formaté d'un texture pack pour l'affichage
+     * Retourne un nom d'affichage formaté pour un pack de textures donné.
+     *
+     * @param packName nom technique du pack
+     * @return nom formaté avec emoji pour l'affichage dans l'interface
      */
     public String getDisplayName(String packName) {
         switch (packName) {
@@ -94,8 +127,13 @@ public class TextureManager {
         }
     }
 
+    /**
+     * Définit le pack de textures actif et charge ses textures.
+     * Si le pack n'est pas disponible, le pack par défaut est chargé.
+     *
+     * @param packName nom du pack à activer
+     */
     public void setTexturePack(String packName) {
-        // Vérifier si le pack est disponible, sinon utiliser le défaut
         if (!availableTexturePacks.contains(packName)) {
             System.err.println("Le texture pack '" + packName + "' n'est pas disponible. Utilisation du pack par défaut.");
             packName = "default";
@@ -103,10 +141,21 @@ public class TextureManager {
         loadTextures(packName);
     }
 
+    /**
+     * Retourne le nom du pack de textures actuellement chargé.
+     *
+     * @return nom du pack actif
+     */
     public String getCurrentTexturePack() {
         return currentTexturePack;
     }
 
+    /**
+     * Charge les textures du pack spécifié dans la map interne.
+     * Si le pack est invalide, charge le pack par défaut.
+     *
+     * @param packName nom du pack à charger
+     */
     private void loadTextures(String packName) {
         textures.clear();
         currentTexturePack = packName;
@@ -132,48 +181,49 @@ public class TextureManager {
         }
     }
 
-
+    /**
+     * Crée des textures par défaut programmatiques (images simples) si le chargement des fichiers échoue.
+     */
     private void createDefaultTextures() {
-        // Créer des images 32x32 par défaut si les fichiers ne sont pas trouvés
         javafx.scene.canvas.Canvas canvas = new javafx.scene.canvas.Canvas(32, 32);
         javafx.scene.canvas.GraphicsContext gc = canvas.getGraphicsContext2D();
 
-        // Texture joueur par défaut (bleu)
+        // Player (bleu)
         gc.setFill(javafx.scene.paint.Color.BLUE);
         gc.fillOval(4, 4, 24, 24);
         textures.put("player", canvas.snapshot(null, null));
 
-        // Texture joueur 2 par défaut (rouge)
+        // Player 2 (rouge)
         gc.clearRect(0, 0, 32, 32);
         gc.setFill(javafx.scene.paint.Color.RED);
         gc.fillOval(4, 4, 24, 24);
         textures.put("player2", canvas.snapshot(null, null));
 
-        // Texture bombe par défaut (noir)
+        // Bombe (noir)
         gc.clearRect(0, 0, 32, 32);
         gc.setFill(javafx.scene.paint.Color.BLACK);
         gc.fillOval(4, 4, 24, 24);
         textures.put("bomb", canvas.snapshot(null, null));
 
-        // Texture explosion par défaut (orange)
+        // Explosion (orange)
         gc.clearRect(0, 0, 32, 32);
         gc.setFill(javafx.scene.paint.Color.ORANGE);
         gc.fillRect(2, 2, 28, 28);
         textures.put("explosion", canvas.snapshot(null, null));
 
-        // Texture mur indestructible (gris)
+        // Mur indestructible (gris)
         gc.clearRect(0, 0, 32, 32);
         gc.setFill(javafx.scene.paint.Color.GRAY);
         gc.fillRect(0, 0, 32, 32);
         textures.put("wall_indestructible", canvas.snapshot(null, null));
 
-        // Texture mur destructible (marron)
+        // Mur destructible (marron)
         gc.clearRect(0, 0, 32, 32);
         gc.setFill(javafx.scene.paint.Color.BROWN);
         gc.fillRect(0, 0, 32, 32);
         textures.put("wall_destructible", canvas.snapshot(null, null));
 
-        // Texture sol (vert)
+        // Sol (vert clair)
         gc.clearRect(0, 0, 32, 32);
         gc.setFill(javafx.scene.paint.Color.LIGHTGREEN);
         gc.fillRect(0, 0, 32, 32);
@@ -182,15 +232,33 @@ public class TextureManager {
         System.out.println("Textures par défaut créées programmatiquement");
     }
 
+    /**
+     * Retourne la texture associée au nom donné.
+     *
+     * @param name clé de la texture (ex: "player", "bomb")
+     * @return instance Image correspondante ou null si inexistante
+     */
     public Image getTexture(String name) {
         return textures.get(name);
     }
 
+    /**
+     * Indique si une texture donnée existe dans le pack chargé.
+     *
+     * @param name clé de la texture
+     * @return true si la texture est présente, false sinon
+     */
     public boolean hasTexture(String name) {
         return textures.containsKey(name);
     }
 
-    // Méthode pour obtenir une texture avec rotation
+    /**
+     * Retourne une version de la texture avec une rotation appliquée.
+     *
+     * @param name  clé de la texture à récupérer
+     * @param angle angle de rotation en degrés
+     * @return nouvelle Image de la texture tournée, ou null si la texture n'existe pas
+     */
     public Image getRotatedTexture(String name, double angle) {
         Image original = getTexture(name);
         if (original == null) return null;
