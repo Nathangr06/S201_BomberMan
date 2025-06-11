@@ -30,7 +30,7 @@ public class BombermanGame {
     private GraphicsContext gc;
     private Timeline gameLoop;
     private Stage gameStage;
-    private boolean captureTheFlagMode = false;
+
     private GameGrid grid;
     private Player player1;
     private Player player2;
@@ -144,9 +144,6 @@ public class BombermanGame {
         EMPTY, WALL, DESTRUCTIBLE_WALL, PLAYER_SPAWN, PLAYER2_SPAWN
     }
 
-    public void setCaptureTheFlagMode(boolean enabled) {
-        this.captureTheFlagMode = enabled;
-    }
     public BombermanGame() {
         // L'initialisation se fait dans startGame()
     }

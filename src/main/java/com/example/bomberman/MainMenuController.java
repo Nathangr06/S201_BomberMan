@@ -66,11 +66,8 @@ public class MainMenuController implements Initializable {
 
     /** Fichier de la carte personnalisée sélectionnée par l'utilisateur. */
     private File selectedMapFile;
-<<<<<<< HEAD
 
     /** Liste des éléments graphiques animés en arrière-plan. */
-=======
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
     private List<Circle> backgroundElements;
 
     /** Gestionnaire des packs de textures. */
@@ -100,25 +97,13 @@ public class MainMenuController implements Initializable {
     private void setupTexturePacks() {
         if (texturePackComboBox != null) {
             List<String> availablePacks = textureManager.getAvailableTexturePacks();
-<<<<<<< HEAD
-=======
-
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
             texturePackComboBox.getItems().clear();
             for (String packName : availablePacks) {
                 String displayName = textureManager.getDisplayName(packName);
                 texturePackComboBox.getItems().add(displayName);
             }
-<<<<<<< HEAD
             String currentPack = textureManager.getCurrentTexturePack();
             texturePackComboBox.setValue(textureManager.getDisplayName(currentPack));
-=======
-
-            String currentPack = textureManager.getCurrentTexturePack();
-            String currentDisplayName = textureManager.getDisplayName(currentPack);
-            texturePackComboBox.setValue(currentDisplayName);
-
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
             texturePackComboBox.setStyle(
                     "-fx-background-color: #34495E; " +
                             "-fx-text-fill: white; " +
@@ -126,32 +111,19 @@ public class MainMenuController implements Initializable {
                             "-fx-font-size: 14px; " +
                             "-fx-background-radius: 15;"
             );
-<<<<<<< HEAD
             texturePackComboBox.setCellFactory(listView -> new ListCell<String>() {
-=======
-
-            texturePackComboBox.setCellFactory(listView -> new ListCell<>() {
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
                 @Override
                 protected void updateItem(String item, boolean empty) {
                     super.updateItem(item, empty);
                     if (empty || item == null) {
                         setText(null);
-                        setStyle("");
                     } else {
                         setText(item);
                         setStyle("-fx-background-color: #2C3E50; -fx-text-fill: white; -fx-padding: 8px;");
                     }
                 }
             });
-<<<<<<< HEAD
             texturePackComboBox.setOnAction(e -> handleTexturePackChange());
-=======
-
-            texturePackComboBox.setOnAction(e -> handleTexturePackChange());
-
-            System.out.println("Texture packs disponibles dans l'interface: " + availablePacks.size());
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
         }
 
         if (texturePackLabel != null) {
@@ -164,15 +136,12 @@ public class MainMenuController implements Initializable {
         }
     }
 
-<<<<<<< HEAD
     /**
      * Récupère le nom interne du pack de textures à partir de son nom affiché.
      *
      * @param displayName nom affiché du pack de textures.
      * @return nom interne du pack, ou "default" si non trouvé.
      */
-=======
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
     private String getPackNameFromDisplayName(String displayName) {
         List<String> availablePacks = textureManager.getAvailableTexturePacks();
         for (String packName : availablePacks) {
@@ -187,27 +156,13 @@ public class MainMenuController implements Initializable {
      * Configure le style des boutons et effets visuels du menu.
      */
     private void setupUI() {
-<<<<<<< HEAD
         titleLabel.setEffect(new Glow(0.8));
-=======
-        if (titleLabel != null) {
-            titleLabel.setEffect(new Glow(0.8));
-        }
-
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
         setupButton(playButton, "#FF6B35");
         setupButton(editorButton, "#4ECDC4");
         setupButton(loadMapButton, "#9B59B6");
         setupButton(exitButton, "#E74C3C");
         setupButton(playAIButton, "#8E44AD");
-<<<<<<< HEAD
         mapInfoContainer.setVisible(false);
-=======
-
-        if (mapInfoContainer != null) {
-            mapInfoContainer.setVisible(false);
-        }
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
     }
 
     /**
@@ -217,8 +172,6 @@ public class MainMenuController implements Initializable {
      * @param color couleur de fond en hexadécimal.
      */
     private void setupButton(Button button, String color) {
-        if (button == null) return;
-
         button.setStyle("-fx-background-color: " + color + "; " +
                 "-fx-text-fill: white; " +
                 "-fx-font-weight: bold; " +
@@ -252,46 +205,21 @@ public class MainMenuController implements Initializable {
      * Configure les animations d'entrée des éléments du menu (titre, boutons, combo).
      */
     private void setupAnimations() {
-<<<<<<< HEAD
         RotateTransition titleRotate = new RotateTransition(Duration.seconds(0.5), titleLabel);
         titleRotate.setFromAngle(-2);
         titleRotate.setToAngle(2);
         titleRotate.setCycleCount(Animation.INDEFINITE);
         titleRotate.setAutoReverse(true);
         titleRotate.play();
-=======
-        if (titleLabel != null) {
-            RotateTransition titleRotate = new RotateTransition(Duration.seconds(0.5), titleLabel);
-            titleRotate.setFromAngle(-2);
-            titleRotate.setToAngle(2);
-            titleRotate.setCycleCount(Animation.INDEFINITE);
-            titleRotate.setAutoReverse(true);
-            titleRotate.play();
-        }
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
 
         Timeline buttonAnimation = new Timeline();
         Button[] buttons = {playButton, playAIButton, editorButton, loadMapButton, exitButton};
         for (int i = 0; i < buttons.length; i++) {
-<<<<<<< HEAD
             buttons[i].setOpacity(0);
             buttons[i].setTranslateX(-50);
             KeyFrame kf = new KeyFrame(Duration.millis(300 + i * 150),
                     new KeyValue(buttons[i].opacityProperty(), 1),
                     new KeyValue(buttons[i].translateXProperty(), 0));
-=======
-            Button btn = buttons[i];
-            if (btn == null) continue;
-
-            btn.setOpacity(0);
-            btn.setTranslateX(-50);
-
-            KeyFrame kf = new KeyFrame(
-                    Duration.millis(300 + i * 150),
-                    new KeyValue(btn.opacityProperty(), 1),
-                    new KeyValue(btn.translateXProperty(), 0)
-            );
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
             buttonAnimation.getKeyFrames().add(kf);
         }
 
@@ -305,13 +233,7 @@ public class MainMenuController implements Initializable {
                     new KeyValue(texturePackLabel.translateXProperty(), 0));
             KeyFrame comboKf = new KeyFrame(Duration.millis(1350),
                     new KeyValue(texturePackComboBox.opacityProperty(), 1),
-<<<<<<< HEAD
                     new KeyValue(texturePackComboBox.translateXProperty(), 0));
-=======
-                    new KeyValue(texturePackComboBox.translateXProperty(), 0)
-            );
-
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
             buttonAnimation.getKeyFrames().addAll(labelKf, comboKf);
         }
         buttonAnimation.play();
@@ -321,8 +243,6 @@ public class MainMenuController implements Initializable {
      * Crée et lance l'animation des éléments graphiques circulaires en arrière-plan.
      */
     private void createBackgroundAnimation() {
-        if (backgroundPane == null) return;
-
         backgroundElements = new ArrayList<>();
         Random random = new Random();
 
@@ -336,12 +256,7 @@ public class MainMenuController implements Initializable {
             backgroundElements.add(element);
             backgroundPane.getChildren().add(element);
 
-<<<<<<< HEAD
             TranslateTransition tt = new TranslateTransition(Duration.seconds(3 + random.nextDouble() * 4), element);
-=======
-            TranslateTransition tt = new TranslateTransition(
-                    Duration.seconds(3 + random.nextDouble() * 4), element);
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
             tt.setFromY(0);
             tt.setToY(-30 - random.nextDouble() * 20);
             tt.setCycleCount(Animation.INDEFINITE);
@@ -349,12 +264,7 @@ public class MainMenuController implements Initializable {
             tt.setDelay(Duration.seconds(random.nextDouble() * 2));
             tt.play();
 
-<<<<<<< HEAD
             RotateTransition rt = new RotateTransition(Duration.seconds(5 + random.nextDouble() * 5), element);
-=======
-            RotateTransition rt = new RotateTransition(
-                    Duration.seconds(5 + random.nextDouble() * 5), element);
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
             rt.setFromAngle(0);
             rt.setToAngle(360);
             rt.setCycleCount(Animation.INDEFINITE);
@@ -384,13 +294,7 @@ public class MainMenuController implements Initializable {
                 showNotification("🎨 Texture pack '" + selectedDisplayName + "' appliqué!", NotificationType.SUCCESS);
 
             } catch (Exception e) {
-<<<<<<< HEAD
                 showNotification("❌ Erreur lors du changement de texture pack: " + e.getMessage(), NotificationType.ERROR);
-=======
-                showNotification("❌ Erreur lors du changement de texture pack: " + e.getMessage(),
-                        NotificationType.ERROR);
-
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
                 String currentPack = textureManager.getCurrentTexturePack();
                 texturePackComboBox.setValue(textureManager.getDisplayName(currentPack));
             }
@@ -462,20 +366,14 @@ public class MainMenuController implements Initializable {
     @FXML
     private void handleLoadMap() {
         FileChooser fileChooser = new FileChooser();
-<<<<<<< HEAD
         fileChooser.setTitle("📂 Choisir une carte personnalisée");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichiers Bomberman (*.bmn)", "*.bmn"));
-=======
-        fileChooser.setTitle("Charger une carte personnalisée");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichiers carte", "*.map"));
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
 
-        Stage stage = (Stage) mainContainer.getScene().getWindow();
+        Stage stage = (Stage) loadMapButton.getScene().getWindow();
         File file = fileChooser.showOpenDialog(stage);
 
         if (file != null) {
             selectedMapFile = file;
-<<<<<<< HEAD
             selectedMapLabel.setText("📋 Carte sélectionnée: " + file.getName());
             mapInfoContainer.setVisible(true);
             FadeTransition fadeIn = new FadeTransition(Duration.millis(300), mapInfoContainer);
@@ -503,13 +401,6 @@ public class MainMenuController implements Initializable {
             } catch (Exception e) {
                 showNotification("❌ Erreur lors du lancement: " + e.getMessage(), NotificationType.ERROR);
                 e.printStackTrace();
-=======
-            if (selectedMapLabel != null) {
-                selectedMapLabel.setText("Carte sélectionnée : " + file.getName());
-            }
-            if (mapInfoContainer != null) {
-                mapInfoContainer.setVisible(true);
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
             }
         }
     }
@@ -519,7 +410,6 @@ public class MainMenuController implements Initializable {
      * Cache la zone d'informations et affiche une notification.
      */
     @FXML
-<<<<<<< HEAD
     private void handleClearMap() {
         selectedMapFile = null;
         mapInfoContainer.setVisible(false);
@@ -540,12 +430,6 @@ public class MainMenuController implements Initializable {
             stage.close();
         });
         fadeOut.play();
-=======
-    private void handleExit() {
-        System.out.println("Fermeture du jeu...");
-        Stage stage = (Stage) mainContainer.getScene().getWindow();
-        stage.close();
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
     }
 
     /**
@@ -588,50 +472,9 @@ public class MainMenuController implements Initializable {
         notificationTimeline.play();
     }
 
-<<<<<<< HEAD
     /**
      * Types de notifications possibles avec leurs couleurs associées.
      */
-=======
-    @FXML
-    private void handlePlayCaptureTheFlag() {
-        System.out.println("Capture The Flag mode launched");
-        Stage stage = new Stage();
-        CaptureTheFlag ctf = new CaptureTheFlag();
-        try {
-            ctf.start(stage);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    @FXML
-    private void handlePlayWithCustomMap() {
-        if (selectedMapFile != null) {
-            showNotification("🚀 Lancement avec carte personnalisée...", NotificationType.INFO);
-
-            try {
-                Stage currentStage = (Stage) playButton.getScene().getWindow();
-
-                BombermanGame game = new BombermanGame();
-                Stage gameStage = new Stage();
-                game.startGame(gameStage, selectedMapFile);
-
-                currentStage.close();
-
-            } catch (Exception e) {
-                showNotification("❌ Erreur lors du lancement: " + e.getMessage(),
-                        NotificationType.ERROR);
-                e.printStackTrace();
-            }
-        }
-    }
-    @FXML
-    private void handleClearMap() {
-        selectedMapFile = null;
-        mapInfoContainer.setVisible(false);
-        showNotification("🗑️ Sélection de carte effacée", NotificationType.INFO);
-    }
->>>>>>> 98cd2d3d40967d7e123937151c1e9f43f4a93fa2
     private enum NotificationType {
         INFO("#3498DB"),
         SUCCESS("#2ECC71"),
