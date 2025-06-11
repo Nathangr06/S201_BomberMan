@@ -90,6 +90,14 @@
 
                 </VBox>
 
+                <!-- Bouton Profil -->
+                <Button fx:id="profileButton" mnemonicParsing="false" onAction="#handleProfileButton" prefHeight="45.0" prefWidth="200.0" text="👤 PROFIL">
+                    <font>
+                        <Font name="System Bold" size="16.0" />
+                    </font>
+                </Button>
+
+
                 <!-- Bouton Quitter -->
                 <Button fx:id="exitButton" mnemonicParsing="false" onAction="#handleExit" prefHeight="45.0" prefWidth="200.0" text="🚪 QUITTER">
                     <font>

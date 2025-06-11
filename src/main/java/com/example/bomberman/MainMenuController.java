@@ -2,6 +2,7 @@
 package com.example.bomberman;
 
 import javafx.animation.*;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -39,6 +40,7 @@ public class MainMenuController implements Initializable {
     @FXML private VBox mapInfoContainer;
     @FXML private Pane backgroundPane;
     @FXML private Button playAIButton;
+    @FXML private Button profileButton; // Ajout du bouton profil
 
     // Variables d'instance
     private File selectedMapFile;
@@ -531,6 +533,20 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    @FXML
+    private void handleProfileButton() {
+        showNotification("📊 Ouverture du profil...", NotificationType.INFO);
+
+        try {
+            PlayerProfileViewer profileView = new PlayerProfileViewer(); // Ta classe vue
+            Stage profileStage = new Stage();
+            profileView.start(profileStage);
+        } catch (Exception e) {
+            showNotification("❌ Erreur lors de l'ouverture du profil: " + e.getMessage(),
+                    NotificationType.ERROR);
+            e.printStackTrace();
+        }
+    }
     private enum NotificationType {
         INFO("#3498DB"), SUCCESS("#27AE60"), ERROR("#E74C3C");
 
