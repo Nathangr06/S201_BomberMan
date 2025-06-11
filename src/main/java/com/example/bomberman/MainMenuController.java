@@ -35,6 +35,7 @@ public class MainMenuController implements Initializable {
     @FXML private Button playAIButton;
     @FXML private ComboBox<String> texturePackComboBox;
     @FXML private Label texturePackLabel;
+    @FXML private Button profileButton; // Ajout du bouton profil
 
     private File selectedMapFile;
     private Timeline backgroundAnimation;
@@ -131,6 +132,7 @@ public class MainMenuController implements Initializable {
         setupButton(loadMapButton, "#9B59B6");
         setupButton(exitButton, "#E74C3C");
         setupButton(playAIButton, "#8E44AD");
+        setupButton(profileButton, "#2980B9"); // Couleur bleue pour le profil
 
         // Masquer les informations de carte par défaut
         mapInfoContainer.setVisible(false);
@@ -182,7 +184,7 @@ public class MainMenuController implements Initializable {
 
         // Animation d'apparition des boutons et éléments
         Timeline buttonAnimation = new Timeline();
-        Button[] buttons = {playButton, playAIButton, editorButton, loadMapButton, exitButton};
+        Button[] buttons = {playButton, playAIButton, editorButton, loadMapButton,profileButton, exitButton};
 
         for (int i = 0; i < buttons.length; i++) {
             buttons[i].setOpacity(0);
@@ -464,6 +466,22 @@ public class MainMenuController implements Initializable {
         notificationTimeline.setOnFinished(e -> backgroundPane.getChildren().remove(notification));
         notificationTimeline.play();
     }
+
+    @FXML
+    private void handleProfileButton() {
+        showNotification("📊 Ouverture du profil...", NotificationType.INFO);
+
+        try {
+            PlayerProfileViewer profileView = new PlayerProfileViewer(); // Ta classe vue
+            Stage profileStage = new Stage();
+            profileView.start(profileStage);
+        } catch (Exception e) {
+            showNotification("❌ Erreur lors de l'ouverture du profil: " + e.getMessage(),
+                    NotificationType.ERROR);
+            e.printStackTrace();
+        }
+    }
+
 
     private enum NotificationType {
         INFO("#3498DB"), SUCCESS("#27AE60"), ERROR("#E74C3C");

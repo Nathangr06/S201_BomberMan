@@ -840,9 +840,37 @@ public class BombermanGame {
 
     private void gameOver(String winner) {
         gameRunning = false;
-        stopGame();
-        System.out.println(winner + " GAGNE!");
-        // Afficher un message ou retourner au menu principal
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+
+        // Mise à jour des statistiques
+        PlayerProfileManager profileManager = PlayerProfileManager.getInstance();
+        PlayerProfile profile1 = profileManager.getCurrentProfile();
+
+        if (profile1 != null) {
+            profile1.incrementGamesPlayed();
+            if ("Joueur 1".equals(winner)) {
+                profile1.incrementGamesWon();
+            }
+            // Sauvegarder les modifications
+            profileManager.saveProfiles();
+        }
+
+        // Afficher le message de fin
+        gc.setFill(new Color(0, 0, 0, 0.8));
+        gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font("Arial", FontWeight.BOLD, 40));
+        gc.fillText(winner + " gagne !",
+                CANVAS_WIDTH / 2 - 100,
+                CANVAS_HEIGHT / 2);
+
+        gc.setFont(Font.font("Arial", FontWeight.NORMAL, 20));
+        gc.fillText("Appuyez sur ESPACE pour rejouer",
+                CANVAS_WIDTH / 2 - 140,
+                CANVAS_HEIGHT / 2 + 40);
     }
 
     private String formatTime(long seconds) {

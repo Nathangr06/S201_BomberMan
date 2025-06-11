@@ -40,20 +40,16 @@
 
                 <!-- Section Texture Pack -->
                 <VBox alignment="CENTER" spacing="15.0" style="-fx-border-color: rgba(255,255,255,0.3); -fx-border-radius: 15; -fx-padding: 20;">
-
                     <Label fx:id="texturePackLabel" text="🎨 TEXTURE PACK" textFill="WHITE">
                         <font>
                             <Font name="System Bold" size="16.0" />
                         </font>
                     </Label>
-
                     <ComboBox fx:id="texturePackComboBox" prefHeight="40.0" prefWidth="250.0" promptText="Choisir un style graphique"/>
-
                 </VBox>
 
                 <!-- Section Carte Personnalisée -->
                 <VBox alignment="CENTER" spacing="15.0" style="-fx-border-color: rgba(255,255,255,0.3); -fx-border-radius: 15; -fx-padding: 20;">
-
                     <Label text="📁 CARTE PERSONNALISÉE" textFill="WHITE">
                         <font>
                             <Font name="System Bold" size="16.0" />
@@ -69,7 +65,6 @@
 
                     <!-- Informations de la carte sélectionnée -->
                     <VBox fx:id="mapInfoContainer" alignment="CENTER" spacing="10.0" style="-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 10; -fx-padding: 15;">
-
                         <Label fx:id="selectedMapLabel" text="📋 Aucune carte sélectionnée" textFill="WHITE">
                             <font>
                                 <Font size="14.0" />
@@ -89,10 +84,15 @@
                                 </font>
                             </Button>
                         </HBox>
-
                     </VBox>
-
                 </VBox>
+
+                <!-- Bouton Profil -->
+                <Button fx:id="profileButton" mnemonicParsing="false" onAction="#handleProfileButton" prefHeight="45.0" prefWidth="200.0" text="👤 PROFIL">
+                    <font>
+                        <Font name="System Bold" size="16.0" />
+                    </font>
+                </Button>
 
                 <!-- Bouton Quitter -->
                 <Button fx:id="exitButton" mnemonicParsing="false" onAction="#handleExit" prefHeight="45.0" prefWidth="200.0" text="🚪 QUITTER">
