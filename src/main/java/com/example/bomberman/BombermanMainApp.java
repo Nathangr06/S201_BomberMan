@@ -17,7 +17,7 @@ public class BombermanMainApp extends Application {
         Parent root = loader.load();
 
         // Créer la scène
-        Scene scene = new Scene(root, 800, 800);
+        Scene scene = new Scene(root, 800, 950);
 
         // Ajouter une feuille de style CSS si nécessaire
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());

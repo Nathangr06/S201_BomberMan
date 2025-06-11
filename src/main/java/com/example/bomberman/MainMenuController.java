@@ -1,4 +1,4 @@
-// MainMenuController.java - Version corrigée avec modes séparés
+// MainMenuController.java - Version mergée avec texture packs et modes séparés
 package com.example.bomberman;
 
 import javafx.animation.*;
@@ -40,12 +40,16 @@ public class MainMenuController implements Initializable {
     @FXML private VBox mapInfoContainer;
     @FXML private Pane backgroundPane;
     @FXML private Button playAIButton;
-    @FXML private Button profileButton; // Ajout du bouton profil
+    @FXML private Button profileButton;
+    @FXML private Button captureTheFlagButton;
+    @FXML private ComboBox<String> texturePackComboBox;
+    @FXML private Label texturePackLabel;
 
     // Variables d'instance
     private File selectedMapFile;
     private Timeline backgroundAnimation;
     private List<Circle> backgroundElements;
+    private TextureManager textureManager;
 
     // Boutons ajoutés programmatiquement
     private Button play4PlayersButton;
@@ -53,6 +57,8 @@ public class MainMenuController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
+            textureManager = TextureManager.getInstance();
+            setupTexturePacks();
             setupUI();
             addMissingButtons();
             setupAnimations();
@@ -60,6 +66,109 @@ public class MainMenuController implements Initializable {
         } catch (Exception e) {
             System.err.println("Erreur lors de l'initialisation du menu: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void setupTexturePacks() {
+        if (texturePackComboBox != null) {
+            // Récupérer les texture packs disponibles depuis le TextureManager
+            List<String> availablePacks = textureManager.getAvailableTexturePacks();
+
+            // Vider la ComboBox et ajouter seulement les packs disponibles
+            texturePackComboBox.getItems().clear();
+
+            for (String packName : availablePacks) {
+                // Utiliser le nom d'affichage formaté
+                String displayName = textureManager.getDisplayName(packName);
+                texturePackComboBox.getItems().add(displayName);
+            }
+
+            // Sélectionner le pack actuel
+            String currentPack = textureManager.getCurrentTexturePack();
+            String currentDisplayName = textureManager.getDisplayName(currentPack);
+            texturePackComboBox.setValue(currentDisplayName);
+
+            // Style de la ComboBox
+            texturePackComboBox.setStyle(
+                    "-fx-background-color: #34495E; " +
+                            "-fx-text-fill: white; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-font-size: 14px; " +
+                            "-fx-background-radius: 15;"
+            );
+
+            // Style des éléments du dropdown
+            texturePackComboBox.setCellFactory(listView -> new ListCell<String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(item);
+                        setStyle("-fx-background-color: #2C3E50; -fx-text-fill: white; -fx-padding: 8px;");
+                    }
+                }
+            });
+
+            // Gestionnaire d'événements pour le changement de texture pack
+            texturePackComboBox.setOnAction(e -> handleTexturePackChange());
+
+            // Afficher le nombre de packs disponibles
+            System.out.println("Texture packs disponibles dans l'interface: " + availablePacks.size());
+        }
+
+        if (texturePackLabel != null) {
+            texturePackLabel.setStyle(
+                    "-fx-text-fill: white; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-font-size: 16px;"
+            );
+            texturePackLabel.setEffect(new Glow(0.3));
+        }
+    }
+
+    // Méthode pour convertir le nom d'affichage vers le nom technique
+    private String getPackNameFromDisplayName(String displayName) {
+        List<String> availablePacks = textureManager.getAvailableTexturePacks();
+
+        for (String packName : availablePacks) {
+            if (textureManager.getDisplayName(packName).equals(displayName)) {
+                return packName;
+            }
+        }
+        return "default"; // Fallback
+    }
+
+    @FXML
+    private void handleTexturePackChange() {
+        String selectedDisplayName = texturePackComboBox.getValue();
+        if (selectedDisplayName != null) {
+            try {
+                // Convertir le nom d'affichage vers le nom technique
+                String selectedPack = getPackNameFromDisplayName(selectedDisplayName);
+
+                // Charger le nouveau texture pack
+                textureManager.setTexturePack(selectedPack);
+
+                // Animation de confirmation
+                ScaleTransition scaleTransition = new ScaleTransition(Duration.millis(200), texturePackComboBox);
+                scaleTransition.setToX(1.1);
+                scaleTransition.setToY(1.1);
+                scaleTransition.setAutoReverse(true);
+                scaleTransition.setCycleCount(2);
+                scaleTransition.play();
+
+                showNotification("🎨 Texture pack '" + selectedDisplayName + "' appliqué!", NotificationType.SUCCESS);
+
+            } catch (Exception e) {
+                showNotification("❌ Erreur lors du changement de texture pack: " + e.getMessage(),
+                        NotificationType.ERROR);
+                // Remettre la valeur précédente en cas d'erreur
+                String currentPack = textureManager.getCurrentTexturePack();
+                String currentDisplayName = textureManager.getDisplayName(currentPack);
+                texturePackComboBox.setValue(currentDisplayName);
+            }
         }
     }
 
@@ -80,6 +189,10 @@ public class MainMenuController implements Initializable {
             if (editorButton != null) setupButton(editorButton, "#4ECDC4");
             if (loadMapButton != null) setupButton(loadMapButton, "#9B59B6");
             if (exitButton != null) setupButton(exitButton, "#E74C3C");
+
+            // Appliquer les effets aux nouveaux boutons
+            if (captureTheFlagButton != null) setupButton(captureTheFlagButton, "#2980B9");
+            if (profileButton != null) setupButton(profileButton, "#1ABC9C");
 
             // Masquer les informations de carte par défaut
             if (mapInfoContainer != null) {
@@ -179,8 +292,10 @@ public class MainMenuController implements Initializable {
             if (playButton != null) buttons.add(playButton);
             if (play4PlayersButton != null) buttons.add(play4PlayersButton);
             if (playAIButton != null) buttons.add(playAIButton);
+            if (captureTheFlagButton != null) buttons.add(captureTheFlagButton);
             if (editorButton != null) buttons.add(editorButton);
             if (loadMapButton != null) buttons.add(loadMapButton);
+            if (profileButton != null) buttons.add(profileButton);
             if (exitButton != null) buttons.add(exitButton);
 
             for (int i = 0; i < buttons.size(); i++) {
@@ -197,6 +312,28 @@ public class MainMenuController implements Initializable {
                     buttonAnimation.getKeyFrames().add(kf);
                 }
             }
+
+            // Animation pour le sélecteur de texture pack
+            if (texturePackComboBox != null && texturePackLabel != null) {
+                texturePackLabel.setOpacity(0);
+                texturePackComboBox.setOpacity(0);
+                texturePackLabel.setTranslateX(50);
+                texturePackComboBox.setTranslateX(50);
+
+                KeyFrame labelKf = new KeyFrame(
+                        Duration.millis(1200),
+                        new KeyValue(texturePackLabel.opacityProperty(), 1),
+                        new KeyValue(texturePackLabel.translateXProperty(), 0)
+                );
+                KeyFrame comboKf = new KeyFrame(
+                        Duration.millis(1350),
+                        new KeyValue(texturePackComboBox.opacityProperty(), 1),
+                        new KeyValue(texturePackComboBox.translateXProperty(), 0)
+                );
+
+                buttonAnimation.getKeyFrames().addAll(labelKf, comboKf);
+            }
+
             buttonAnimation.play();
         } catch (Exception e) {
             System.err.println("Erreur lors de la configuration des animations: " + e.getMessage());
@@ -475,16 +612,38 @@ public class MainMenuController implements Initializable {
 
     @FXML
     private void handlePlayCaptureTheFlag() {
-        System.out.println("Capture The Flag mode launched");
-        Stage stage = new Stage();
-        CaptureTheFlag ctf = new CaptureTheFlag();
+        showNotification("🏳️ Lancement du mode Capture the Flag...", NotificationType.INFO);
+
         try {
+            Stage stage = new Stage();
+            CaptureTheFlag ctf = new CaptureTheFlag();
             ctf.start(stage);
+
+            // Fermer la fenêtre actuelle
+            Stage currentStage = (Stage) captureTheFlagButton.getScene().getWindow();
+            currentStage.close();
+
         } catch (Exception e) {
+            showNotification("❌ Erreur lors du lancement du mode CTF: " + e.getMessage(),
+                    NotificationType.ERROR);
             e.printStackTrace();
         }
     }
 
+    @FXML
+    private void handleProfileButton() {
+        showNotification("📊 Ouverture du profil...", NotificationType.INFO);
+
+        try {
+            PlayerProfileViewer profileView = new PlayerProfileViewer();
+            Stage profileStage = new Stage();
+            profileView.start(profileStage);
+        } catch (Exception e) {
+            showNotification("❌ Erreur lors de l'ouverture du profil: " + e.getMessage(),
+                    NotificationType.ERROR);
+            e.printStackTrace();
+        }
+    }
 
     private void showNotification(String message, NotificationType type) {
         // Utiliser la console comme fallback si pas d'interface graphique disponible
@@ -533,20 +692,6 @@ public class MainMenuController implements Initializable {
         }
     }
 
-    @FXML
-    private void handleProfileButton() {
-        showNotification("📊 Ouverture du profil...", NotificationType.INFO);
-
-        try {
-            PlayerProfileViewer profileView = new PlayerProfileViewer(); // Ta classe vue
-            Stage profileStage = new Stage();
-            profileView.start(profileStage);
-        } catch (Exception e) {
-            showNotification("❌ Erreur lors de l'ouverture du profil: " + e.getMessage(),
-                    NotificationType.ERROR);
-            e.printStackTrace();
-        }
-    }
     private enum NotificationType {
         INFO("#3498DB"), SUCCESS("#27AE60"), ERROR("#E74C3C");
 
