@@ -24,6 +24,11 @@ public class Bomb {
         return timer <= 0;
     }
 
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public int getTimer() {
         return timer;
     }

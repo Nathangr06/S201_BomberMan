@@ -102,13 +102,15 @@ public class BombermanGame {
     private long player1LastBombTime = 0;
     private long player2LastBombTime = 0;
     private boolean wallPassDropped = false; // Indique si le Wall Pass a déjà été drop
-
+    private boolean player1CanPushBombs = false;
+    private boolean player2CanPushBombs = false;
 
     public enum PowerUpType {
         BOMB_RANGE("range", Color.ORANGE),      // Augmente la portée des bombes
         SPEED_BOOST("speed", Color.CYAN),       // Augmente la vitesse
         WALL_PASS("wall", Color.PURPLE),        // Permet de traverser les murs destructibles
-        BOMB_COOLDOWN("cooldown", Color.YELLOW); // Réduit le délai entre les bombes
+        BOMB_COOLDOWN("cooldown", Color.YELLOW), // Réduit le délai entre les bombes
+        BOMB_PUSH("push", Color.MAGENTA);       // Permet de pousser les bombes
 
         private final String label;
         private final Color color;
@@ -221,10 +223,6 @@ public class BombermanGame {
             aiPlayer = new AIPlayer(grid, this);
         }
 
-        if (aiMode) {
-            aiPlayer = new AIPlayer(grid, this);
-        }
-
         bombs = new ArrayList<>();
         explosions = new ArrayList<>();
         powerUps = new ArrayList<>();
@@ -270,9 +268,7 @@ public class BombermanGame {
         player2Lives = 3;
         player1InvincibilityTimer = 0;
         player2InvincibilityTimer = 0;
-        if (aiMode) {
-            aiPlayer = new AIPlayer(grid, this);
-        }
+
         if (aiMode) {
             aiPlayer = new AIPlayer(grid, this);
         }
@@ -293,9 +289,9 @@ public class BombermanGame {
         player1LastBombTime = 0;
         player2LastBombTime = 0;
         wallPassDropped = false;
+        player1CanPushBombs = false;
+        player2CanPushBombs = false;
     }
-
-
 
     private void loadCustomLevel(File levelFile) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(levelFile))) {
@@ -387,7 +383,6 @@ public class BombermanGame {
         gameDuration = (currentTime - gameStartTime) / 1000; // Convertir en secondes
     }
 
-
     private void handleInput() {
         long currentTime = System.nanoTime();
 
@@ -401,12 +396,25 @@ public class BombermanGame {
             else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.DOWN)) newY++;
 
             if ((newX != player1TargetX || newY != player1TargetY) &&
-                    (grid.isWalkable(newX, newY) || (player1CanPassWalls && grid.isDestructibleWall(newX, newY))) &&
-                    !hasBombAt(newX, newY)) {
-                player1TargetX = newX;
-                player1TargetY = newY;
-                isPlayer1Moving = true;
-                lastPlayer1MoveTime = currentTime;
+                    (grid.isWalkable(newX, newY) || (player1CanPassWalls && grid.isDestructibleWall(newX, newY)))) {
+
+                // Vérifier s'il y a une bombe à pousser
+                if (hasBombAt(newX, newY) && player1CanPushBombs) {
+                    int pushX = newX + (newX - player1TargetX);
+                    int pushY = newY + (newY - player1TargetY);
+                    if (canPushBombTo(pushX, pushY)) {
+                        pushBomb(newX, newY, pushX, pushY);
+                        player1TargetX = newX;
+                        player1TargetY = newY;
+                        isPlayer1Moving = true;
+                        lastPlayer1MoveTime = currentTime;
+                    }
+                } else if (!hasBombAt(newX, newY)) {
+                    player1TargetX = newX;
+                    player1TargetY = newY;
+                    isPlayer1Moving = true;
+                    lastPlayer1MoveTime = currentTime;
+                }
             }
         }
 
@@ -419,36 +427,72 @@ public class BombermanGame {
                     switch (action) {
                         case MOVE_LEFT:
                             if ((grid.isWalkable(player2TargetX - 1, player2TargetY) ||
-                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX - 1, player2TargetY))) &&
-                                    !hasBombAt(player2TargetX - 1, player2TargetY)) {
-                                player2TargetX--;
-                                isPlayer2Moving = true;
+                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX - 1, player2TargetY)))) {
+
+                                if (hasBombAt(player2TargetX - 1, player2TargetY) && player2CanPushBombs) {
+                                    if (canPushBombTo(player2TargetX - 2, player2TargetY)) {
+                                        pushBomb(player2TargetX - 1, player2TargetY, player2TargetX - 2, player2TargetY);
+                                        player2TargetX--;
+                                        isPlayer2Moving = true;
+                                    }
+                                } else if (!hasBombAt(player2TargetX - 1, player2TargetY)) {
+                                    player2TargetX--;
+                                    isPlayer2Moving = true;
+                                }
                             }
                             break;
+
                         case MOVE_RIGHT:
                             if ((grid.isWalkable(player2TargetX + 1, player2TargetY) ||
-                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX + 1, player2TargetY))) &&
-                                    !hasBombAt(player2TargetX + 1, player2TargetY)) {
-                                player2TargetX++;
-                                isPlayer2Moving = true;
+                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX + 1, player2TargetY)))) {
+
+                                if (hasBombAt(player2TargetX + 1, player2TargetY) && player2CanPushBombs) {
+                                    if (canPushBombTo(player2TargetX + 2, player2TargetY)) {
+                                        pushBomb(player2TargetX + 1, player2TargetY, player2TargetX + 2, player2TargetY);
+                                        player2TargetX++;
+                                        isPlayer2Moving = true;
+                                    }
+                                } else if (!hasBombAt(player2TargetX + 1, player2TargetY)) {
+                                    player2TargetX++;
+                                    isPlayer2Moving = true;
+                                }
                             }
                             break;
+
                         case MOVE_UP:
                             if ((grid.isWalkable(player2TargetX, player2TargetY - 1) ||
-                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX, player2TargetY - 1))) &&
-                                    !hasBombAt(player2TargetX, player2TargetY - 1)) {
-                                player2TargetY--;
-                                isPlayer2Moving = true;
+                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX, player2TargetY - 1)))) {
+
+                                if (hasBombAt(player2TargetX, player2TargetY - 1) && player2CanPushBombs) {
+                                    if (canPushBombTo(player2TargetX, player2TargetY - 2)) {
+                                        pushBomb(player2TargetX, player2TargetY - 1, player2TargetX, player2TargetY - 2);
+                                        player2TargetY--;
+                                        isPlayer2Moving = true;
+                                    }
+                                } else if (!hasBombAt(player2TargetX, player2TargetY - 1)) {
+                                    player2TargetY--;
+                                    isPlayer2Moving = true;
+                                }
                             }
                             break;
+
                         case MOVE_DOWN:
                             if ((grid.isWalkable(player2TargetX, player2TargetY + 1) ||
-                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX, player2TargetY + 1))) &&
-                                    !hasBombAt(player2TargetX, player2TargetY + 1)) {
-                                player2TargetY++;
-                                isPlayer2Moving = true;
+                                    (player2CanPassWalls && grid.isDestructibleWall(player2TargetX, player2TargetY + 1)))) {
+
+                                if (hasBombAt(player2TargetX, player2TargetY + 1) && player2CanPushBombs) {
+                                    if (canPushBombTo(player2TargetX, player2TargetY + 2)) {
+                                        pushBomb(player2TargetX, player2TargetY + 1, player2TargetX, player2TargetY + 2);
+                                        player2TargetY++;
+                                        isPlayer2Moving = true;
+                                    }
+                                } else if (!hasBombAt(player2TargetX, player2TargetY + 1)) {
+                                    player2TargetY++;
+                                    isPlayer2Moving = true;
+                                }
                             }
                             break;
+
                         case PLACE_BOMB:
                             if (currentTime - player2LastBombTime > (DEFAULT_BOMB_COOLDOWN - player2BombCooldown)) {
                                 placeBomb(player2, player2BombRange);
@@ -470,12 +514,25 @@ public class BombermanGame {
                 else if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.S)) newY++;
 
                 if ((newX != player2TargetX || newY != player2TargetY) &&
-                        (grid.isWalkable(newX, newY) || (player2CanPassWalls && grid.isDestructibleWall(newX, newY))) &&
-                        !hasBombAt(newX, newY)) {
-                    player2TargetX = newX;
-                    player2TargetY = newY;
-                    isPlayer2Moving = true;
-                    lastPlayer2MoveTime = currentTime;
+                        (grid.isWalkable(newX, newY) || (player2CanPassWalls && grid.isDestructibleWall(newX, newY)))) {
+
+                    // Vérifier s'il y a une bombe à pousser
+                    if (hasBombAt(newX, newY) && player2CanPushBombs) {
+                        int pushX = newX + (newX - player2TargetX);
+                        int pushY = newY + (newY - player2TargetY);
+                        if (canPushBombTo(pushX, pushY)) {
+                            pushBomb(newX, newY, pushX, pushY);
+                            player2TargetX = newX;
+                            player2TargetY = newY;
+                            isPlayer2Moving = true;
+                            lastPlayer2MoveTime = currentTime;
+                        }
+                    } else if (!hasBombAt(newX, newY)) {
+                        player2TargetX = newX;
+                        player2TargetY = newY;
+                        isPlayer2Moving = true;
+                        lastPlayer2MoveTime = currentTime;
+                    }
                 }
             }
 
@@ -511,7 +568,6 @@ public class BombermanGame {
             player2InvincibilityTimer--;
         }
     }
-
 
     private void updatePlayerMovement() {
         // Mise à jour position visuelle joueur 1
@@ -561,7 +617,6 @@ public class BombermanGame {
         }
     }
 
-
     private void updatePowerUps() {
         // Vérifier les collisions avec les power-ups
         var iterator = powerUps.iterator();
@@ -579,6 +634,25 @@ public class BombermanGame {
             if (powerUp.getX() == player2.getX() && powerUp.getY() == player2.getY()) {
                 applyPowerUp(2, powerUp.getType());
                 iterator.remove();
+            }
+        }
+    }
+
+    private boolean canPushBombTo(int x, int y) {
+        return grid.inBounds(x, y) && grid.isWalkable(x, y) && !hasBombAt(x, y) &&
+                !hasPlayerAt(x, y);
+    }
+
+    private boolean hasPlayerAt(int x, int y) {
+        return (player1.getX() == x && player1.getY() == y) ||
+                (player2.getX() == x && player2.getY() == y);
+    }
+
+    private void pushBomb(int fromX, int fromY, int toX, int toY) {
+        for (Bomb bomb : bombs) {
+            if (bomb.getX() == fromX && bomb.getY() == fromY) {
+                bomb.setPosition(toX, toY);
+                break;
             }
         }
     }
@@ -613,17 +687,20 @@ public class BombermanGame {
                     player2BombCooldown = Math.min(player2BombCooldown + 200_000_000L, 400_000_000L);
                 }
                 break;
+            case BOMB_PUSH:
+                if (playerNumber == 1) {
+                    player1CanPushBombs = true;
+                } else {
+                    player2CanPushBombs = true;
+                }
+                break;
         }
         System.out.println("Joueur " + playerNumber + " a ramassé un power-up: " + type.getLabel());
     }
 
-
-
-
     private boolean hasBombAt(int x, int y) {
         return bombs.stream().anyMatch(b -> b.getX() == x && b.getY() == y);
     }
-
 
     private void placeBomb(Player player) {
         placeBomb(player, 2); // Portée par défaut
@@ -636,7 +713,6 @@ public class BombermanGame {
             bombs.add(bomb);
         }
     }
-
 
     private void updateBombs() {
         var iterator = bombs.iterator();
@@ -674,7 +750,8 @@ public class BombermanGame {
                         PowerUpType randomType;
                         if (wallPassDropped) {
                             // Si Wall Pass déjà drop, choisir parmi les autres types
-                            PowerUpType[] availableTypes = {PowerUpType.BOMB_RANGE, PowerUpType.SPEED_BOOST, PowerUpType.BOMB_COOLDOWN};
+                            PowerUpType[] availableTypes = {PowerUpType.BOMB_RANGE, PowerUpType.SPEED_BOOST,
+                                    PowerUpType.BOMB_COOLDOWN, PowerUpType.BOMB_PUSH};
                             randomType = availableTypes[(int)(Math.random() * availableTypes.length)];
                         } else {
                             // Sinon, choisir parmi tous les types
@@ -821,8 +898,6 @@ public class BombermanGame {
                 }
             }
 
-
-
             // Power-ups
             for (PowerUp powerUp : powerUps) {
                 int x = powerUp.getX() * TILE_SIZE;
@@ -842,7 +917,6 @@ public class BombermanGame {
                 String label = powerUp.getType().getLabel().substring(0, 1).toUpperCase();
                 gc.fillText(label, x + TILE_SIZE/2 - 3, y + TILE_SIZE/2 + 3);
             }
-
 
             // Joueurs avec effet visuel d'invincibilité
             Image playerTexture = textureManager.getTexture("player");
@@ -925,9 +999,9 @@ public class BombermanGame {
 
         // Power-ups du joueur 1
         gc.setFont(Font.font("Arial", FontWeight.NORMAL, 10));
-        String p1Powers = "R:" + player1BombRange + " S:" + String.format("%.1f", player1Speed/MOVEMENT_SPEED);
+        String p1Powers = "R:" + player1BombRange + " S:" + String.format("%.1f", player1Speed/MOVEMENT_SPEED) +
+                (player1CanPushBombs ? " P" : "");
         gc.fillText(p1Powers, 20, TIMER_HEIGHT / 2 + 30);
-
 
         // Section Joueur 2 à droite
         gc.setFont(Font.font("Arial", FontWeight.BOLD, 16));
@@ -943,10 +1017,10 @@ public class BombermanGame {
 
         // Power-ups du joueur 2
         gc.setFont(Font.font("Arial", FontWeight.NORMAL, 10));
-        String p2Powers = "R:" + player2BombRange + " S:" + String.format("%.1f", player2Speed/MOVEMENT_SPEED);
+        String p2Powers = "R:" + player2BombRange + " S:" + String.format("%.1f", player2Speed/MOVEMENT_SPEED) +
+                (player2CanPushBombs ? " P" : "");
         double p2PowersWidth = p2Powers.length() * 6;
         gc.fillText(p2Powers, CANVAS_WIDTH - p2PowersWidth - 20, TIMER_HEIGHT / 2 + 30);
-
     }
 
     private void renderTimerBox(double x, double y, double width, double height) {
