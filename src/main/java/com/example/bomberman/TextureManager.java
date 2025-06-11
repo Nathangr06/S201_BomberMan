@@ -34,6 +34,8 @@ public class TextureManager {
             String basePath = "/texturepacks/" + packName + "/";
             textures.put("player", new Image(getClass().getResourceAsStream(basePath + "player.png")));
             textures.put("player2", new Image(getClass().getResourceAsStream(basePath + "player2.png")));
+            textures.put("Flag_J1", new Image(getClass().getResourceAsStream(basePath + "Flag_J1.png")));
+            textures.put("Flag_J2", new Image(getClass().getResourceAsStream(basePath + "Flag_J2.png")));
             textures.put("bomb", new Image(getClass().getResourceAsStream(basePath + "bombe.png")));
             textures.put("explosion", new Image(getClass().getResourceAsStream(basePath + "explosion.png")));
             textures.put("wall_indestructible", new Image(getClass().getResourceAsStream(basePath + "mur_indestructible.png")));

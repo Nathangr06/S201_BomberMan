@@ -51,7 +51,6 @@ public class BombermanGame extends Application {
     private boolean player1Alive = true;
     private boolean player2Alive = true;
 
-
     @Override
     public void start(Stage primaryStage) {
         initializeGame();
@@ -95,6 +94,11 @@ public class BombermanGame extends Application {
 
         bombs = new java.util.ArrayList<>();
         explosions = new java.util.ArrayList<>();
+
+        if (captureTheFlagMode) {
+            flag1 = new Flag(player1.getX(), player1.getY());
+            flag2 = new Flag(player2.getX(), player2.getY());
+        }
     }
 
     private void startGameLoop() {
@@ -112,10 +116,28 @@ public class BombermanGame extends Application {
         updateBombs();
         updateExplosions();
         checkPlayerExplosionCollision();
+
+        if (captureTheFlagMode) {
+            if (!flag2.isCaptured() && player1.getX() == flag2.getX() && player1.getY() == flag2.getY()) {
+                player1HasFlag = true;
+                flag2.setCaptured(true);
+            }
+            if (!flag1.isCaptured() && player2.getX() == flag1.getX() && player2.getY() == flag1.getY()) {
+                player2HasFlag = true;
+                flag1.setCaptured(true);
+            }
+
+            if (player1HasFlag && player1.getX() == flag1.getX() && player1.getY() == flag1.getY() && player1Alive) {
+                endGame("Joueur 1 a capturé le drapeau et a gagné !");
+            }
+            if (player2HasFlag && player2.getX() == flag2.getX() && player2.getY() == flag2.getY() && player2Alive) {
+                endGame("Joueur 2 a capturé le drapeau et a gagné !");
+            }
+        }
     }
 
     private void handleInput() {
-        if (!isPlayer1Moving) {
+        if (player1Alive && !isPlayer1Moving) {
             int newX = player1TargetX;
             int newY = player1TargetY;
             if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.LEFT)) newX--;
@@ -130,7 +152,7 @@ public class BombermanGame extends Application {
             }
         }
 
-        if (!isPlayer2Moving) {
+        if (player2Alive && !isPlayer2Moving) {
             int newX = player2TargetX;
             int newY = player2TargetY;
             if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.Q)) newX--;
@@ -145,11 +167,11 @@ public class BombermanGame extends Application {
             }
         }
 
+        // Les joueurs peuvent poser des bombes même morts (mode CTF)
         if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.ENTER)) {
             placeBomb(player1);
             inputHandler.setKeyReleased(javafx.scene.input.KeyCode.ENTER);
         }
-
 
         if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.B)) {
             placeBomb(player2);
@@ -253,17 +275,24 @@ public class BombermanGame extends Application {
         int p2Y = player2.getY();
 
         for (Explosion explosion : explosions) {
-            if ((explosion.getX() == p1X && explosion.getY() == p1Y) ||
-                    (explosion.getX() == p2X && explosion.getY() == p2Y)) {
-                playerDeath();
-                return;
+            int ex = explosion.getX();
+            int ey = explosion.getY();
+
+            if (player1Alive && ex == p1X && ey == p1Y) {
+                player1Alive = false;
+                if (player1HasFlag) endGame("Joueur 1 est mort avec le drapeau !");
+            }
+
+            if (player2Alive && ex == p2X && ey == p2Y) {
+                player2Alive = false;
+                if (player2HasFlag) endGame("Joueur 2 est mort avec le drapeau !");
             }
         }
     }
 
-    private void playerDeath() {
+    private void endGame(String message) {
         gameLoop.stop();
-        System.out.println("Game Over!");
+        System.out.println("Fin de partie : " + message);
     }
 
     private void render() {
@@ -271,6 +300,30 @@ public class BombermanGame extends Application {
         gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         grid.render(gc);
+
+        // Affichage des drapeaux si mode CTF activé
+        if (captureTheFlagMode) {
+            Image flagTextureJ1 = textureManager.getTexture("Flag_J1");
+            Image flagTextureJ2 = textureManager.getTexture("Flag_J2");
+
+            if (!flag1.isCaptured()) {
+                if (flagTextureJ1 != null) {
+                    gc.drawImage(flagTextureJ1, flag1.getX() * TILE_SIZE, flag1.getY() * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                } else {
+                    gc.setFill(Color.YELLOW);
+                    gc.fillRect(flag1.getX() * TILE_SIZE + 10, flag1.getY() * TILE_SIZE + 10, 20, 20);
+                }
+            }
+
+            if (!flag2.isCaptured()) {
+                if (flagTextureJ2 != null) {
+                    gc.drawImage(flagTextureJ2, flag2.getX() * TILE_SIZE, flag2.getY() * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                } else {
+                    gc.setFill(Color.YELLOW);
+                    gc.fillRect(flag2.getX() * TILE_SIZE + 10, flag2.getY() * TILE_SIZE + 10, 20, 20);
+                }
+            }
+        }
 
         Image explosionTexture = textureManager.getTexture("explosion");
         for (Explosion explosion : explosions) {
@@ -307,7 +360,18 @@ public class BombermanGame extends Application {
             gc.setFill(Color.RED);
             gc.fillOval(player2PixelX + 5, player2PixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
         }
+
+        // Indiquer si un joueur a le drapeau (petit carré sur le joueur)
+        if (player1HasFlag && player1Alive) {
+            gc.setFill(Color.YELLOW);
+            gc.fillRect(player1PixelX + TILE_SIZE / 3, player1PixelY + TILE_SIZE / 3, TILE_SIZE / 3, TILE_SIZE / 3);
+        }
+        if (player2HasFlag && player2Alive) {
+            gc.setFill(Color.YELLOW);
+            gc.fillRect(player2PixelX + TILE_SIZE / 3, player2PixelY + TILE_SIZE / 3, TILE_SIZE / 3, TILE_SIZE / 3);
+        }
     }
+
 
     public static void main(String[] args) {
         launch(args);
