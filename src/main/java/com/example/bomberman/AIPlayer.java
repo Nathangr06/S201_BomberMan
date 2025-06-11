@@ -197,7 +197,7 @@ public class AIPlayer {
 
         // Vérifier qu'on peut s'échapper après avoir placé la bombe
         List<Bomb> futureBombs = new ArrayList<>(bombs);
-        futureBombs.add(new Bomb(x, y, 180)); // Simuler notre future bombe
+        futureBombs.add(new Bomb(x, y)); // Simuler notre future bombe
 
         AIAction escapeRoute = findBestEscapeRoute(x, y, futureBombs, explosions);
         if (escapeRoute == null) {
