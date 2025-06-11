@@ -23,14 +23,21 @@
             <VBox alignment="CENTER" spacing="20.0" style="-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 20; -fx-padding: 40;">
 
                 <!-- Bouton Jouer -->
-                <Button fx:id="playButton" mnemonicParsing="false" onAction="#handlePlayGame" prefHeight="50.0" prefWidth="300.0" text="🎮 JOUER">
+                <Button fx:id="playButton" mnemonicParsing="false" onAction="#handlePlayGame" prefHeight="50.0" prefWidth="300.0" text="🎮 JOUER" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-background-radius: 15;">
+                    <font>
+                        <Font name="System Bold" size="18.0" />
+                    </font>
+                </Button>
+
+                <!-- Bouton Capture the Flag -->
+                <Button fx:id="captureTheFlagButton" mnemonicParsing="false" onAction="#handlePlayCaptureTheFlag" prefHeight="50.0" prefWidth="300.0" text="🏳️ CAPTURE THE FLAG" style="-fx-background-color: #2980B9; -fx-text-fill: white; -fx-background-radius: 15;">
                     <font>
                         <Font name="System Bold" size="18.0" />
                     </font>
                 </Button>
 
                 <!-- Bouton Éditeur -->
-                <Button fx:id="editorButton" mnemonicParsing="false" onAction="#handleOpenEditor" prefHeight="50.0" prefWidth="300.0" text="🛠️ ÉDITEUR DE NIVEAUX">
+                <Button fx:id="editorButton" mnemonicParsing="false" onAction="#handleOpenEditor" prefHeight="50.0" prefWidth="300.0" text="🛠️ ÉDITEUR DE NIVEAUX" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-background-radius: 15;">
                     <font>
                         <Font name="System Bold" size="18.0" />
                     </font>
@@ -95,7 +102,8 @@
                 </VBox>
 
                 <!-- Bouton Quitter -->
-                <Button fx:id="exitButton" mnemonicParsing="false" onAction="#handleExit" prefHeight="45.0" prefWidth="200.0" text="🚪 QUITTER">
+                <Button fx:id="exitButton" mnemonicParsing="false" onAction="#handleExit" prefHeight="45.0" prefWidth="200.0" text="🚪 QUITTER" style="-fx-background-color: #27AE60; -fx-text-fill: white; -fx-background-radius: 15;">
+
                     <font>
                         <Font name="System Bold" size="16.0" />
                     </font>
