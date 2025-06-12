@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.bomberman.MainMenuController">
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="bomberman.MainMenuController">
     <center>
         <VBox fx:id="mainContainer" alignment="CENTER" spacing="30.0" style="-fx-background-color: linear-gradient(to bottom, #667eea, #764ba2);">
             <padding>

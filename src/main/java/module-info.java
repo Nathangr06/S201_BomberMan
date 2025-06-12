@@ -4,6 +4,6 @@ module com.example.bomberman {
     requires javafx.graphics;
 
 
-    opens com.example.bomberman to javafx.fxml;
-    exports com.example.bomberman;
+    opens bomberman to javafx.fxml;
+    exports bomberman;
 }
