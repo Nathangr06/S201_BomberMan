@@ -1,10 +1,11 @@
 // MainMenuController.java - Version mergée avec texture packs et modes séparés
 package bomberman.controller.menu;
 
-import bomberman.controller.game.BombermanLevelEditor;
-import bomberman.controller.game.TextureManager;
+import bomberman.model.ai.AIPlayer;
 import bomberman.model.game.BombermanGame;
 import bomberman.model.game.CaptureTheFlag;
+import bomberman.controller.game.BombermanLevelEditor;
+import bomberman.controller.game.TextureManager;
 import javafx.animation.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -26,33 +27,104 @@ import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
 
+/**
+ * Contrôleur principal du menu du jeu Bomberman.
+ * Cette classe gère l'interface utilisateur du menu principal, incluant la navigation
+ * entre les différents modes de jeu, la gestion des texture packs, le chargement
+ * de cartes personnalisées et les animations visuelles. Elle sert de point d'entrée
+ * central pour toutes les fonctionnalités du jeu.
+ *
+ * <p>Fonctionnalités principales :</p>
+ * <ul>
+ *   <li>Navigation entre les modes de jeu (2/4 joueurs, IA, CTF)</li>
+ *   <li>Gestion dynamique des texture packs</li>
+ *   <li>Chargement et validation de cartes personnalisées</li>
+ *   <li>Interface animée avec effets visuels</li>
+ *   <li>Système de notifications utilisateur</li>
+ *   <li>Intégration avec l'éditeur de niveaux</li>
+ * </ul>
+ *
+ * <p>Architecture FXML :</p>
+ * Cette classe utilise l'injection FXML pour lier les éléments d'interface
+ * définis dans le fichier FXML correspondant. Les éléments sont automatiquement
+ * injectés lors de l'initialisation grâce aux annotations @FXML.
+ *
+ * @author BUT1_TD3_G35
+ * @version 1.0
+ * @since 1.0
+ */
 public class MainMenuController implements Initializable {
 
-    // Éléments FXML - doivent correspondre aux fx:id dans le fichier FXML
+    // ==================== ÉLÉMENTS FXML ====================
+    // Tous ces éléments doivent correspondre aux fx:id dans le fichier FXML
+
+    /** Conteneur principal du menu */
     @FXML private VBox mainContainer;
+
+    /** Label du titre du jeu */
     @FXML private Label titleLabel;
+
+    /** Bouton pour lancer une partie à 2 joueurs */
     @FXML private Button playButton;
+
+    /** Bouton pour ouvrir l'éditeur de niveaux */
     @FXML private Button editorButton;
+
+    /** Bouton pour charger une carte personnalisée */
     @FXML private Button loadMapButton;
+
+    /** Bouton pour quitter l'application */
     @FXML private Button exitButton;
+
+    /** Label affichant la carte sélectionnée */
     @FXML private Label selectedMapLabel;
+
+    /** Conteneur des informations de carte */
     @FXML private VBox mapInfoContainer;
+
+    /** Panneau de fond pour les animations */
     @FXML private Pane backgroundPane;
+
+    /** Bouton pour jouer contre l'IA */
     @FXML private Button playAIButton;
+
+    /** Bouton pour accéder au profil joueur */
     @FXML private Button profileButton;
+
+    /** Bouton pour le mode Capture the Flag */
     @FXML private Button captureTheFlagButton;
+
+    /** ComboBox pour sélectionner les texture packs */
     @FXML private ComboBox<String> texturePackComboBox;
+
+    /** Label du sélecteur de texture pack */
     @FXML private Label texturePackLabel;
 
-    // Variables d'instance
+    // ==================== VARIABLES D'INSTANCE ====================
+
+    /** Fichier de carte personnalisée sélectionné */
     private File selectedMapFile;
+
+    /** Timeline pour l'animation de fond */
     private Timeline backgroundAnimation;
+
+    /** Liste des éléments animés du fond */
     private List<Circle> backgroundElements;
+
+    /** Gestionnaire de textures pour les packs visuels */
     private TextureManager textureManager;
 
-    // Boutons ajoutés programmatiquement
+    /** Bouton pour jouer à 4 joueurs (ajouté programmatiquement) */
     private Button play4PlayersButton;
 
+    /**
+     * Méthode d'initialisation appelée automatiquement par JavaFX.
+     * Configure tous les éléments de l'interface utilisateur, initialise les animations
+     * et met en place les gestionnaires d'événements.
+     *
+     * @param location L'URL de localisation (utilisée par JavaFX)
+     * @param resources Les ressources de localisation (utilisées par JavaFX)
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
@@ -68,6 +140,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Configure le système de texture packs.
+     * Initialise la ComboBox avec les packs disponibles, applique le style visuel
+     * et met en place les gestionnaires d'événements pour le changement de pack.
+     */
     private void setupTexturePacks() {
         if (texturePackComboBox != null) {
             // Récupérer les texture packs disponibles depuis le TextureManager
@@ -127,7 +204,14 @@ public class MainMenuController implements Initializable {
         }
     }
 
-    // Méthode pour convertir le nom d'affichage vers le nom technique
+    /**
+     * Convertit un nom d'affichage vers le nom technique du texture pack.
+     * Effectue la correspondance inverse entre le nom formaté affiché à l'utilisateur
+     * et le nom interne utilisé par le TextureManager.
+     *
+     * @param displayName Le nom d'affichage du texture pack
+     * @return Le nom technique correspondant ou "default" en cas d'échec
+     */
     private String getPackNameFromDisplayName(String displayName) {
         List<String> availablePacks = textureManager.getAvailableTexturePacks();
 
@@ -139,6 +223,11 @@ public class MainMenuController implements Initializable {
         return "default"; // Fallback
     }
 
+    /**
+     * Gestionnaire pour le changement de texture pack.
+     * Traite la sélection d'un nouveau pack, applique les changements
+     * et fournit un retour visuel à l'utilisateur.
+     */
     @FXML
     private void handleTexturePackChange() {
         String selectedDisplayName = texturePackComboBox.getValue();
@@ -171,6 +260,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Configure l'interface utilisateur principale.
+     * Applique les styles, effets visuels et configure l'état initial
+     * de tous les éléments d'interface.
+     */
     private void setupUI() {
         try {
             // Configuration du titre avec effet de lueur
@@ -202,6 +296,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Ajoute les boutons manquants créés programmatiquement.
+     * Crée et insère le bouton "4 joueurs" dans l'interface existante
+     * en trouvant dynamiquement le conteneur approprié.
+     */
     private void addMissingButtons() {
         try {
             // Créer le bouton 4 joueurs programmatiquement
@@ -232,6 +331,14 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Configure le style et les animations d'un bouton.
+     * Applique une couleur personnalisée, des effets d'ombre et
+     * des animations de survol pour améliorer l'expérience utilisateur.
+     *
+     * @param button Le bouton à configurer
+     * @param color La couleur principale du bouton (format hexadécimal)
+     */
     private void setupButton(Button button, String color) {
         if (button == null) return;
 
@@ -273,6 +380,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Configure toutes les animations de l'interface.
+     * Met en place les animations du titre, l'apparition séquentielle des boutons
+     * et les effets visuels pour créer une interface dynamique et engageante.
+     */
     private void setupAnimations() {
         try {
             if (titleLabel != null) {
@@ -339,6 +451,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Crée l'animation de fond du menu.
+     * Génère des éléments animés (cercles flottants) qui bougent en arrière-plan
+     * pour créer une ambiance dynamique et immersive.
+     */
     private void createBackgroundAnimation() {
         if (backgroundPane == null) return;
 
@@ -380,7 +497,13 @@ public class MainMenuController implements Initializable {
         }
     }
 
-    // MÉTHODES FXML - Mode 2 joueurs direct
+    // ==================== GESTIONNAIRES D'ÉVÉNEMENTS FXML ====================
+
+    /**
+     * Lance une partie en mode 2 joueurs.
+     * Ferme le menu actuel et démarre une nouvelle instance du jeu
+     * configurée pour 2 joueurs avec les paramètres par défaut.
+     */
     @FXML
     public void handlePlayGame() {
         showNotification("🎮 Lancement du jeu 2 joueurs...", NotificationType.INFO);
@@ -404,7 +527,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
-    // Mode 4 joueurs direct
+    /**
+     * Lance une partie en mode 4 joueurs.
+     * Ferme le menu actuel et démarre une nouvelle instance du jeu
+     * configurée pour 4 joueurs avec les paramètres par défaut.
+     */
     public void handlePlay4Players() {
         showNotification("🎮👥 Lancement du jeu 4 joueurs...", NotificationType.INFO);
 
@@ -427,27 +554,26 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Lance une partie contre l'IA.
+     * Ferme le menu actuel et démarre le mode de jeu contre l'intelligence artificielle.
+     */
     @FXML
     public void handlePlayAI() {
+
         showNotification("🤖 Lancement du jeu contre l'IA...", NotificationType.INFO);
-
-        try {
-            Stage currentStage = (Stage) playAIButton.getScene().getWindow();
-
-            BombermanGame game = new BombermanGame();
-            game.setAIMode(true);
-            Stage gameStage = new Stage();
-            game.startGame(gameStage);
-
-            currentStage.close();
-
-        } catch (Exception e) {
-            showNotification("❌ Erreur lors du lancement du jeu IA: " + e.getMessage(),
-                    NotificationType.ERROR);
-            e.printStackTrace();
-        }
+        Stage stage = new Stage();
+        AIPlayer ai = new AIPlayer();
+        ai.start(stage);
+        stage.show();
+        Stage currentStage = (Stage) captureTheFlagButton.getScene().getWindow();
+        currentStage.close();
     }
 
+    /**
+     * Ouvre l'éditeur de niveaux.
+     * Ferme le menu actuel et lance l'éditeur pour créer des cartes personnalisées.
+     */
     @FXML
     public void handleOpenEditor() {
         showNotification("🛠️ Ouverture de l'éditeur...", NotificationType.SUCCESS);
@@ -470,6 +596,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Ouvre un sélecteur de fichier pour charger une carte personnalisée.
+     * Permet à l'utilisateur de choisir un fichier .bmn contenant
+     * une carte créée avec l'éditeur de niveaux.
+     */
     @FXML
     public void handleLoadMap() {
         try {
@@ -507,6 +638,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Lance une partie avec la carte personnalisée sélectionnée.
+     * Affiche un menu contextuel permettant de choisir le mode de jeu
+     * (2 joueurs, 4 joueurs, ou IA) avec la carte personnalisée.
+     */
     @FXML
     public void handlePlayWithCustomMap() {
         if (selectedMapFile != null) {
@@ -531,6 +667,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Lance le jeu avec une carte personnalisée et un nombre de joueurs spécifié.
+     *
+     * @param playerCount Le nombre de joueurs pour la partie (2 ou 4)
+     */
     private void launchGameWithMap(int playerCount) {
         showNotification("🚀 Lancement avec carte personnalisée (" + playerCount + " joueurs)...", NotificationType.INFO);
 
@@ -551,26 +692,23 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Lance le mode IA avec une carte personnalisée.
+     */
     private void launchGameWithMapAI() {
+        Stage currentStage = (Stage) playButton.getScene().getWindow();
         showNotification("🚀 Lancement IA avec carte personnalisée...", NotificationType.INFO);
+        Stage stage = new Stage();
+        AIPlayer ai = new AIPlayer();
+        ai.start(stage);
 
-        try {
-            Stage currentStage = (Stage) playButton.getScene().getWindow();
-
-            BombermanGame game = new BombermanGame();
-            game.setAIMode(true);
-            Stage gameStage = new Stage();
-            game.startGame(gameStage, selectedMapFile);
-
-            currentStage.close();
-
-        } catch (Exception e) {
-            showNotification("❌ Erreur lors du lancement: " + e.getMessage(),
-                    NotificationType.ERROR);
-            e.printStackTrace();
-        }
+        currentStage.close();
     }
 
+    /**
+     * Efface la sélection de carte personnalisée.
+     * Remet l'interface dans l'état initial sans carte sélectionnée.
+     */
     @FXML
     public void handleClearMap() {
         selectedMapFile = null;
@@ -583,6 +721,10 @@ public class MainMenuController implements Initializable {
         showNotification("🗑️ Sélection de carte effacée", NotificationType.INFO);
     }
 
+    /**
+     * Ferme l'application avec une animation de sortie.
+     * Affiche une animation de fondu avant de fermer la fenêtre.
+     */
     @FXML
     public void handleExit() {
         showNotification("👋 Au revoir!", NotificationType.INFO);
@@ -609,6 +751,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Lance le mode Capture the Flag.
+     * Ferme le menu actuel et démarre le mode de jeu CTF où les équipes
+     * doivent capturer le drapeau adverse pour gagner.
+     */
     @FXML
     private void handlePlayCaptureTheFlag() {
         showNotification("🏳️ Lancement du mode Capture the Flag...", NotificationType.INFO);
@@ -629,6 +776,11 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Ouvre l'interface de profil joueur.
+     * Affiche les statistiques et les données de progression du joueur
+     * dans une nouvelle fenêtre sans fermer le menu principal.
+     */
     @FXML
     private void handleProfileButton() {
         showNotification("📊 Ouverture du profil...", NotificationType.INFO);
@@ -644,6 +796,17 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    // ==================== SYSTÈME DE NOTIFICATIONS ====================
+
+    /**
+     * Affiche une notification temporaire à l'utilisateur.
+     * Crée un label stylisé qui apparaît en haut de l'interface avec une animation
+     * d'apparition/disparition. Utilise la console comme fallback si l'interface
+     * graphique n'est pas disponible.
+     *
+     * @param message Le message à afficher dans la notification
+     * @param type Le type de notification (INFO, SUCCESS, ERROR) qui détermine la couleur
+     */
     private void showNotification(String message, NotificationType type) {
         // Utiliser la console comme fallback si pas d'interface graphique disponible
         System.out.println(message);
@@ -691,15 +854,38 @@ public class MainMenuController implements Initializable {
         }
     }
 
+    /**
+     * Énumération des types de notifications disponibles.
+     * Chaque type a une couleur associée pour différencier visuellement
+     * les messages d'information, de succès et d'erreur.
+     */
     private enum NotificationType {
-        INFO("#3498DB"), SUCCESS("#27AE60"), ERROR("#E74C3C");
+        /** Notification d'information (bleu) */
+        INFO("#3498DB"),
 
+        /** Notification de succès (vert) */
+        SUCCESS("#27AE60"),
+
+        /** Notification d'erreur (rouge) */
+        ERROR("#E74C3C");
+
+        /** Code couleur hexadécimal du type de notification */
         private final String color;
 
+        /**
+         * Constructeur du type de notification.
+         *
+         * @param color Le code couleur hexadécimal associé au type
+         */
         NotificationType(String color) {
             this.color = color;
         }
 
+        /**
+         * Retourne la couleur associée au type de notification.
+         *
+         * @return Le code couleur hexadécimal
+         */
         public String getColor() {
             return color;
         }

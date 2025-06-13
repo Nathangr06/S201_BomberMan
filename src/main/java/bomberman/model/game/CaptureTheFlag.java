@@ -1,7 +1,7 @@
 package bomberman.model.game;
 
-import bomberman.controller.menu.InputHandler;
 import bomberman.controller.game.TextureManager;
+import bomberman.controller.menu.InputHandler;
 import bomberman.model.entities.Bomb;
 import bomberman.model.entities.Explosion;
 import bomberman.model.entities.Flag;
@@ -21,42 +21,147 @@ import javafx.util.Duration;
 
 import java.util.List;
 
+/**
+ * Mode de jeu Capture the Flag pour Bomberman.
+ * Cette application JavaFX implémente une variante du jeu Bomberman où l'objectif
+ * n'est plus d'éliminer l'adversaire mais de capturer son drapeau et de le ramener
+ * à sa base. Ce mode introduit de nouvelles mécaniques tactiques et stratégiques
+ * tout en conservant les éléments de base du gameplay Bomberman.
+ *
+ * <p>Règles du jeu :</p>
+ * <ul>
+ *   <li>Chaque joueur a un drapeau à sa position de spawn</li>
+ *   <li>Pour gagner : capturer le drapeau adverse ET le ramener à sa base</li>
+ *   <li>Les joueurs peuvent toujours placer des bombes même après être morts</li>
+ *   <li>Mourir avec le drapeau adverse fait perdre la partie</li>
+ *   <li>Les bombes servent à créer des passages et gêner l'adversaire</li>
+ * </ul>
+ *
+ * <p>Mécaniques spéciales :</p>
+ * <ul>
+ *   <li><strong>Capture</strong> : Se déplacer sur le drapeau adverse</li>
+ *   <li><strong>Victoire</strong> : Ramener le drapeau à sa base d'origine</li>
+ *   <li><strong>Défaite</strong> : Mourir en portant le drapeau adverse</li>
+ *   <li><strong>Indication visuelle</strong> : Carré jaune sur le porteur du drapeau</li>
+ * </ul>
+ *
+ * <p>Contrôles :</p>
+ * <ul>
+ *   <li><strong>Joueur 1</strong> : Flèches directionnelles + Entrée (bombe)</li>
+ *   <li><strong>Joueur 2</strong> : ZQSD + B (bombe)</li>
+ * </ul>
+ *
+ * <p>Différences avec le mode classique :</p>
+ * <ul>
+ *   <li>Objectif de capture au lieu d'élimination</li>
+ *   <li>Possibilité de jouer après la mort (placement de bombes)</li>
+ *   <li>Système de drapeaux avec positions fixes</li>
+ *   <li>Conditions de victoire alternatives</li>
+ * </ul>
+ *
+ * @author BUT1_TD3_G35
+ * @version 1.0
+ * @since 1.0
+ */
 public class CaptureTheFlag extends Application {
 
+    // ==================== CONSTANTES DE JEU ====================
+
+    /** Taille d'une tuile en pixels */
     public static final int TILE_SIZE = 40;
+
+    /** Largeur de la grille en nombre de tuiles */
     public static final int GRID_WIDTH = 15;
+
+    /** Hauteur de la grille en nombre de tuiles */
     public static final int GRID_HEIGHT = 13;
+
+    /** Largeur totale du canvas en pixels */
     public static final int CANVAS_WIDTH = GRID_WIDTH * TILE_SIZE;
+
+    /** Hauteur totale du canvas en pixels */
     public static final int CANVAS_HEIGHT = GRID_HEIGHT * TILE_SIZE;
 
+    // ==================== COMPOSANTS JAVAFX ====================
+
+    /** Canvas de rendu du jeu */
     private Canvas canvas;
+
+    /** Contexte graphique pour le dessin */
     private GraphicsContext gc;
+
+    /** Boucle de jeu principale */
     private Timeline gameLoop;
 
+    // ==================== ENTITÉS DE JEU ====================
+
+    /** Grille de jeu avec murs et obstacles */
     private GameGrid grid;
+
+    /** Joueur 1 (bleu) */
     private Player player1;
+
+    /** Joueur 2 (rouge) */
     private Player player2;
+
+    /** Liste des bombes actives */
     private List<Bomb> bombs;
+
+    /** Liste des explosions en cours */
     private List<Explosion> explosions;
+
+    /** Gestionnaire de textures pour les sprites */
     private TextureManager textureManager;
 
+    /** Gestionnaire des entrées clavier */
     private InputHandler inputHandler;
 
+    // ==================== SYSTÈME DE MOUVEMENT FLUIDE ====================
+
+    /** Position pixel du joueur 1 pour le rendu fluide */
     private double player1PixelX, player1PixelY;
+
+    /** Position pixel du joueur 2 pour le rendu fluide */
     private double player2PixelX, player2PixelY;
+
+    /** Vitesse de déplacement en pixels par frame */
     private double playerSpeed = 3.0;
+
+    /** État de mouvement des joueurs */
     private boolean isPlayer1Moving = false;
     private boolean isPlayer2Moving = false;
+
+    /** Positions cibles sur la grille */
     private int player1TargetX, player1TargetY;
     private int player2TargetX, player2TargetY;
 
-    private Flag flag1, flag2;
+    // ==================== MÉCANIQUES CAPTURE THE FLAG ====================
+
+    /** Drapeau du joueur 1 (à capturer par le joueur 2) */
+    private Flag flag1;
+
+    /** Drapeau du joueur 2 (à capturer par le joueur 1) */
+    private Flag flag2;
+
+    /** Indique si le joueur 1 porte le drapeau adverse */
     private boolean player1HasFlag = false;
+
+    /** Indique si le joueur 2 porte le drapeau adverse */
     private boolean player2HasFlag = false;
-    private boolean captureTheFlagMode = true; // pour activer/désactiver le mode
+
+    /** Active/désactive le mode Capture the Flag */
+    private boolean captureTheFlagMode = true;
+
+    /** État de vie des joueurs */
     private boolean player1Alive = true;
     private boolean player2Alive = true;
 
+    /**
+     * Point d'entrée principal de l'application JavaFX.
+     * Initialise le jeu, configure l'interface utilisateur et démarre la boucle de jeu.
+     *
+     * @param primaryStage La fenêtre principale de l'application
+     */
     @Override
     public void start(Stage primaryStage) {
         initializeGame();
@@ -70,7 +175,7 @@ public class CaptureTheFlag extends Application {
         inputHandler = new InputHandler(scene);
 
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Bomberman");
+        primaryStage.setTitle("Bomberman - Capture the Flag");
         primaryStage.setResizable(false);
         primaryStage.show();
 
@@ -79,15 +184,22 @@ public class CaptureTheFlag extends Application {
         startGameLoop();
     }
 
+    /**
+     * Initialise l'état du jeu pour une nouvelle partie.
+     * Configure la grille, positionne les joueurs aux coins opposés,
+     * initialise les collections d'entités et place les drapeaux si le mode CTF est activé.
+     */
     private void initializeGame() {
         textureManager = TextureManager.getInstance();
 
         grid = new GameGrid(GRID_WIDTH, GRID_HEIGHT);
         grid.generate();
 
+        // Positionnement initial aux coins opposés
         player1 = new Player(1, 1);
         player2 = new Player(13, 11);
 
+        // Synchronisation des positions pixel et grille
         player1PixelX = player1.getX() * TILE_SIZE;
         player1PixelY = player1.getY() * TILE_SIZE;
         player1TargetX = player1.getX();
@@ -98,15 +210,22 @@ public class CaptureTheFlag extends Application {
         player2TargetX = player2.getX();
         player2TargetY = player2.getY();
 
+        // Initialisation des collections d'entités
         bombs = new java.util.ArrayList<>();
         explosions = new java.util.ArrayList<>();
 
+        // Placement des drapeaux en mode CTF
         if (captureTheFlagMode) {
             flag1 = new Flag(player1.getX(), player1.getY());
             flag2 = new Flag(player2.getX(), player2.getY());
         }
     }
 
+    /**
+     * Démarre la boucle de jeu principale.
+     * Configure une Timeline JavaFX qui s'exécute à 60 FPS (16ms par frame)
+     * pour assurer un gameplay fluide et responsive.
+     */
     private void startGameLoop() {
         gameLoop = new Timeline(new KeyFrame(Duration.millis(16), e -> {
             update();
@@ -116,6 +235,11 @@ public class CaptureTheFlag extends Application {
         gameLoop.play();
     }
 
+    /**
+     * Met à jour l'état complet du jeu pour une frame.
+     * Traite les entrées, met à jour les entités et vérifie les conditions
+     * spéciales du mode Capture the Flag.
+     */
     private void update() {
         handleInput();
         updatePlayerMovement();
@@ -123,7 +247,9 @@ public class CaptureTheFlag extends Application {
         updateExplosions();
         checkPlayerExplosionCollision();
 
+        // Mécaniques spécifiques au mode CTF
         if (captureTheFlagMode) {
+            // Capture du drapeau adverse
             if (!flag2.isCaptured() && player1.getX() == flag2.getX() && player1.getY() == flag2.getY()) {
                 player1HasFlag = true;
                 flag2.setCaptured(true);
@@ -133,6 +259,7 @@ public class CaptureTheFlag extends Application {
                 flag1.setCaptured(true);
             }
 
+            // Conditions de victoire : ramener le drapeau à sa base
             if (player1HasFlag && player1.getX() == flag1.getX() && player1.getY() == flag1.getY() && player1Alive) {
                 endGame("Joueur 1 a capturé le drapeau et a gagné !");
             }
@@ -142,7 +269,13 @@ public class CaptureTheFlag extends Application {
         }
     }
 
+    /**
+     * Gère les entrées des deux joueurs.
+     * Traite les commandes de mouvement pour les joueurs vivants et
+     * les commandes de placement de bombes (disponibles même après la mort en mode CTF).
+     */
     private void handleInput() {
+        // Gestion du mouvement du joueur 1 (si vivant et pas en mouvement)
         if (player1Alive && !isPlayer1Moving) {
             int newX = player1TargetX;
             int newY = player1TargetY;
@@ -158,6 +291,7 @@ public class CaptureTheFlag extends Application {
             }
         }
 
+        // Gestion du mouvement du joueur 2 (si vivant et pas en mouvement)
         if (player2Alive && !isPlayer2Moving) {
             int newX = player2TargetX;
             int newY = player2TargetY;
@@ -173,7 +307,7 @@ public class CaptureTheFlag extends Application {
             }
         }
 
-        // Les joueurs peuvent poser des bombes même morts (mode CTF)
+        // Placement de bombes (disponible même après la mort en mode CTF)
         if (inputHandler.isKeyPressed(javafx.scene.input.KeyCode.ENTER)) {
             placeBomb(player1);
             inputHandler.setKeyReleased(javafx.scene.input.KeyCode.ENTER);
@@ -185,13 +319,21 @@ public class CaptureTheFlag extends Application {
         }
     }
 
+    /**
+     * Met à jour le mouvement fluide des joueurs.
+     * Interpole entre la position actuelle et la position cible pour créer
+     * un déplacement visuel fluide. Synchronise les positions logiques
+     * quand la destination est atteinte.
+     */
     private void updatePlayerMovement() {
+        // Mouvement du joueur 1
         if (isPlayer1Moving) {
             double targetX = player1TargetX * TILE_SIZE;
             double targetY = player1TargetY * TILE_SIZE;
             double dx = targetX - player1PixelX;
             double dy = targetY - player1PixelY;
             double distance = Math.sqrt(dx * dx + dy * dy);
+
             if (distance <= playerSpeed) {
                 player1PixelX = targetX;
                 player1PixelY = targetY;
@@ -203,12 +345,14 @@ public class CaptureTheFlag extends Application {
             }
         }
 
+        // Mouvement du joueur 2
         if (isPlayer2Moving) {
             double targetX = player2TargetX * TILE_SIZE;
             double targetY = player2TargetY * TILE_SIZE;
             double dx = targetX - player2PixelX;
             double dy = targetY - player2PixelY;
             double distance = Math.sqrt(dx * dx + dy * dy);
+
             if (distance <= playerSpeed) {
                 player2PixelX = targetX;
                 player2PixelY = targetY;
@@ -221,6 +365,13 @@ public class CaptureTheFlag extends Application {
         }
     }
 
+    /**
+     * Place une bombe à la position du joueur spécifié.
+     * Vérifie qu'aucune bombe n'est déjà présente à cette position
+     * avant d'en créer une nouvelle.
+     *
+     * @param player Le joueur qui place la bombe
+     */
     private void placeBomb(Player player) {
         int x = player.getX();
         int y = player.getY();
@@ -229,10 +380,22 @@ public class CaptureTheFlag extends Application {
         }
     }
 
+    /**
+     * Vérifie s'il y a une bombe à la position spécifiée.
+     *
+     * @param x Coordonnée X à vérifier
+     * @param y Coordonnée Y à vérifier
+     * @return true s'il y a une bombe à cette position
+     */
     private boolean hasBombAt(int x, int y) {
         return bombs.stream().anyMatch(b -> b.getX() == x && b.getY() == y);
     }
 
+    /**
+     * Met à jour toutes les bombes actives.
+     * Décrémente les timers et déclenche les explosions
+     * quand le timer atteint zéro.
+     */
     private void updateBombs() {
         var iterator = bombs.iterator();
         while (iterator.hasNext()) {
@@ -245,10 +408,18 @@ public class CaptureTheFlag extends Application {
         }
     }
 
+    /**
+     * Déclenche l'explosion d'une bombe.
+     * Crée une explosion centrale et propage dans les 4 directions
+     * avec une portée de 2 cases. Détruit les murs destructibles rencontrés.
+     *
+     * @param bomb La bombe qui explose
+     */
     private void explodeBomb(Bomb bomb) {
         int range = 2;
         explosions.add(new Explosion(bomb.getX(), bomb.getY(), 60));
 
+        // Directions : haut, droite, bas, gauche
         int[] dx = {0, 1, 0, -1};
         int[] dy = {-1, 0, 1, 0};
 
@@ -270,10 +441,19 @@ public class CaptureTheFlag extends Application {
         }
     }
 
+    /**
+     * Met à jour toutes les explosions actives.
+     * Supprime automatiquement les explosions dont le timer a expiré.
+     */
     private void updateExplosions() {
         explosions.removeIf(Explosion::decreaseTimerAndCheck);
     }
 
+    /**
+     * Vérifie les collisions entre joueurs et explosions.
+     * Marque un joueur comme mort s'il se trouve sur une explosion.
+     * En mode CTF, terminer la partie si un joueur meurt en portant un drapeau.
+     */
     private void checkPlayerExplosionCollision() {
         int p1X = player1.getX();
         int p1Y = player1.getY();
@@ -284,11 +464,13 @@ public class CaptureTheFlag extends Application {
             int ex = explosion.getX();
             int ey = explosion.getY();
 
+            // Collision joueur 1
             if (player1Alive && ex == p1X && ey == p1Y) {
                 player1Alive = false;
                 if (player1HasFlag) endGame("Joueur 1 est mort avec le drapeau !");
             }
 
+            // Collision joueur 2
             if (player2Alive && ex == p2X && ey == p2Y) {
                 player2Alive = false;
                 if (player2HasFlag) endGame("Joueur 2 est mort avec le drapeau !");
@@ -296,15 +478,28 @@ public class CaptureTheFlag extends Application {
         }
     }
 
+    /**
+     * Termine la partie avec un message spécifique.
+     * Arrête la boucle de jeu et affiche le résultat dans la console.
+     *
+     * @param message Le message de fin de partie à afficher
+     */
     private void endGame(String message) {
         gameLoop.stop();
         System.out.println("Fin de partie : " + message);
     }
 
+    /**
+     * Effectue le rendu complet d'une frame du jeu.
+     * Dessine tous les éléments visuels dans l'ordre approprié :
+     * fond, grille, drapeaux, explosions, bombes, joueurs et indicateurs.
+     */
     private void render() {
+        // Fond vert foncé
         gc.setFill(Color.DARKGREEN);
         gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+        // Rendu de la grille
         grid.render(gc);
 
         // Affichage des drapeaux si mode CTF activé
@@ -312,6 +507,7 @@ public class CaptureTheFlag extends Application {
             Image flagTextureJ1 = textureManager.getTexture("Flag_J1");
             Image flagTextureJ2 = textureManager.getTexture("Flag_J2");
 
+            // Drapeau du joueur 1 (si pas capturé)
             if (!flag1.isCaptured()) {
                 if (flagTextureJ1 != null) {
                     gc.drawImage(flagTextureJ1, flag1.getX() * TILE_SIZE, flag1.getY() * TILE_SIZE, TILE_SIZE, TILE_SIZE);
@@ -321,6 +517,7 @@ public class CaptureTheFlag extends Application {
                 }
             }
 
+            // Drapeau du joueur 2 (si pas capturé)
             if (!flag2.isCaptured()) {
                 if (flagTextureJ2 != null) {
                     gc.drawImage(flagTextureJ2, flag2.getX() * TILE_SIZE, flag2.getY() * TILE_SIZE, TILE_SIZE, TILE_SIZE);
@@ -331,6 +528,7 @@ public class CaptureTheFlag extends Application {
             }
         }
 
+        // Rendu des explosions
         Image explosionTexture = textureManager.getTexture("explosion");
         for (Explosion explosion : explosions) {
             int x = explosion.getX() * TILE_SIZE;
@@ -343,6 +541,7 @@ public class CaptureTheFlag extends Application {
             }
         }
 
+        // Rendu des bombes
         Image bombTexture = textureManager.getTexture("bomb");
         for (Bomb bomb : bombs) {
             int x = bomb.getX() * TILE_SIZE;
@@ -355,19 +554,21 @@ public class CaptureTheFlag extends Application {
             }
         }
 
+        // Rendu des joueurs
         Image playerTexture = textureManager.getTexture("player");
         Image player2Texture = textureManager.getTexture("player2");
-        if (playerTexture != null) {
+        if (playerTexture != null && player2Texture != null) {
             gc.drawImage(playerTexture, player1PixelX, player1PixelY, TILE_SIZE, TILE_SIZE);
             gc.drawImage(player2Texture, player2PixelX, player2PixelY, TILE_SIZE, TILE_SIZE);
         } else {
+            // Fallback sans textures
             gc.setFill(Color.BLUE);
             gc.fillOval(player1PixelX + 5, player1PixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
             gc.setFill(Color.RED);
             gc.fillOval(player2PixelX + 5, player2PixelY + 5, TILE_SIZE - 10, TILE_SIZE - 10);
         }
 
-        // Indiquer si un joueur a le drapeau (petit carré sur le joueur)
+        // Indicateurs visuels : carré jaune sur le porteur du drapeau
         if (player1HasFlag && player1Alive) {
             gc.setFill(Color.YELLOW);
             gc.fillRect(player1PixelX + TILE_SIZE / 3, player1PixelY + TILE_SIZE / 3, TILE_SIZE / 3, TILE_SIZE / 3);
@@ -378,7 +579,12 @@ public class CaptureTheFlag extends Application {
         }
     }
 
-
+    /**
+     * Point d'entrée principal de l'application.
+     * Lance l'interface graphique JavaFX.
+     *
+     * @param args Arguments de ligne de commande (non utilisés)
+     */
     public static void main(String[] args) {
         launch(args);
     }

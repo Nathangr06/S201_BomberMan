@@ -13,37 +13,106 @@ import javafx.stage.Stage;
 
 import java.io.*;
 
+/**
+ * Éditeur de niveaux graphique pour le jeu Bomberman.
+ * Cette application JavaFX permet de créer, modifier et sauvegarder des niveaux personnalisés
+ * pour le jeu Bomberman. L'éditeur offre une interface intuitive avec une grille interactive,
+ * des outils de placement, et des fonctionnalités de sauvegarde/chargement.
+ *
+ * <p>Fonctionnalités principales :</p>
+ * <ul>
+ *   <li>Création de niveaux avec différents types de cellules</li>
+ *   <li>Interface graphique intuitive avec outils de placement</li>
+ *   <li>Sauvegarde et chargement de niveaux au format .bmn</li>
+ *   <li>Validation des contraintes de niveau (spawn unique)</li>
+ *   <li>Aperçu en temps réel des statistiques du niveau</li>
+ * </ul>
+ *
+ * @author BUT1_TD3_G35
+ * @version 1.0
+ * @since 1.0
+ */
 public class BombermanLevelEditor extends Application {
 
-    // Types d'éléments du niveau
+    /**
+     * Énumération des types de cellules disponibles dans l'éditeur.
+     * Chaque type a un nom d'affichage et une couleur associée pour la représentation visuelle.
+     */
     public enum CellType {
+        /** Case vide - Les joueurs peuvent se déplacer dessus */
         EMPTY("Vide", Color.LIGHTGRAY),
+
+        /** Mur indestructible - Bloque les mouvements et les explosions */
         WALL("Mur", Color.GREY),
+
+        /** Mur destructible - Peut être détruit par les explosions */
         DESTRUCTIBLE_WALL("Mur Destructible", Color.BROWN),
+
+        /** Point d'apparition des joueurs - Position de départ dans le niveau */
         PLAYER_SPAWN("Spawn Joueur", Color.BLUE);
 
+        /** Nom d'affichage du type de cellule */
         private final String name;
+
+        /** Couleur de représentation visuelle */
         private final Color color;
 
+        /**
+         * Constructeur d'un type de cellule.
+         *
+         * @param name Le nom d'affichage du type
+         * @param color La couleur de représentation
+         */
         CellType(String name, Color color) {
             this.name = name;
             this.color = color;
         }
 
+        /**
+         * Retourne le nom d'affichage du type de cellule.
+         *
+         * @return Le nom d'affichage
+         */
         public String getName() { return name; }
+
+        /**
+         * Retourne la couleur de représentation du type de cellule.
+         *
+         * @return La couleur associée
+         */
         public Color getColor() { return color; }
     }
 
+    /** Nombre de lignes de la grille de niveau */
     private static final int GRID_ROWS = 13;
+
+    /** Nombre de colonnes de la grille de niveau */
     private static final int GRID_COLS = 15;
+
+    /** Taille en pixels de chaque cellule de la grille */
     private static final int CELL_SIZE = 30;
 
+    /** Matrice représentant l'état logique de chaque cellule du niveau */
     private CellType[][] grid = new CellType[GRID_ROWS][GRID_COLS];
+
+    /** Matrice des rectangles JavaFX pour l'affichage visuel de la grille */
     private Rectangle[][] gridRectangles = new Rectangle[GRID_ROWS][GRID_COLS];
+
+    /** Type d'outil actuellement sélectionné pour le placement */
     private CellType selectedTool;
+
+    /** Label d'affichage des statistiques du niveau */
     private Label statusLabel;
+
+    /** ComboBox pour la sélection des outils */
     private ComboBox<CellType> toolSelector;
 
+    /**
+     * Point d'entrée principal de l'application JavaFX.
+     * Initialise l'interface utilisateur et configure la fenêtre principale.
+     *
+     * @param primaryStage La fenêtre principale de l'application
+     */
     @Override
     public void start(Stage primaryStage) {
         initializeGrid();
@@ -69,6 +138,11 @@ public class BombermanLevelEditor extends Application {
         primaryStage.show();
     }
 
+    /**
+     * Initialise la grille de niveau avec des valeurs par défaut.
+     * Crée les matrices de données et d'affichage, et définit l'outil initial.
+     * Toutes les cellules sont initialisées comme vides.
+     */
     private void initializeGrid() {
         grid = new CellType[GRID_ROWS][GRID_COLS];
         gridRectangles = new Rectangle[GRID_ROWS][GRID_COLS];
@@ -82,6 +156,12 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Crée le panneau d'outils contenant les contrôles de l'éditeur.
+     * Inclut le sélecteur d'outils et les boutons d'action (effacer, sauvegarder, charger).
+     *
+     * @return Le panneau d'outils configuré
+     */
     private HBox createToolPanel() {
         HBox toolPanel = new HBox(10);
         toolPanel.setPadding(new Insets(10));
@@ -115,6 +195,13 @@ public class BombermanLevelEditor extends Application {
         return toolPanel;
     }
 
+    /**
+     * Crée la grille interactive de l'éditeur.
+     * Chaque cellule est représentée par un Rectangle cliquable avec gestion des événements souris.
+     * Supporte le clic gauche (placement) et le clic droit (effacement).
+     *
+     * @return La grille JavaFX configurée avec les gestionnaires d'événements
+     */
     private GridPane createGameGrid() {
         GridPane gameGrid = new GridPane();
         gameGrid.setAlignment(Pos.CENTER);
@@ -132,6 +219,7 @@ public class BombermanLevelEditor extends Application {
                 final int r = i;
                 final int c = j;
 
+                // Gestion des clics souris
                 cell.setOnMouseClicked(e -> {
                     switch (e.getButton()) {
                         case PRIMARY:
@@ -145,7 +233,7 @@ public class BombermanLevelEditor extends Application {
                     updateStatus();
                 });
 
-                // Effet de survol
+                // Effet de survol pour preview
                 cell.setOnMouseEntered(e -> {
                     if (!cell.getFill().equals(selectedTool.getColor())) {
                         cell.setOpacity(0.7);
@@ -162,6 +250,12 @@ public class BombermanLevelEditor extends Application {
         return gameGrid;
     }
 
+    /**
+     * Crée le panneau de statut contenant les informations du niveau.
+     * Affiche les statistiques en temps réel et la légende des couleurs.
+     *
+     * @return Le panneau de statut configuré
+     */
     private VBox createStatusPanel() {
         VBox statusPanel = new VBox(5);
         statusPanel.setPadding(new Insets(10));
@@ -191,6 +285,14 @@ public class BombermanLevelEditor extends Application {
         return statusPanel;
     }
 
+    /**
+     * Place l'outil sélectionné à la position spécifiée.
+     * Applique les contraintes spéciales selon le type d'outil
+     * (ex: un seul spawn joueur autorisé).
+     *
+     * @param row La ligne de placement
+     * @param col La colonne de placement
+     */
     private void placeTool(int row, int col) {
         // Vérifier les contraintes spéciales
         if (selectedTool == CellType.PLAYER_SPAWN) {
@@ -202,6 +304,12 @@ public class BombermanLevelEditor extends Application {
         updateCell(row, col);
     }
 
+    /**
+     * Supprime toutes les instances d'un type de cellule spécifique de la grille.
+     * Utilisé pour appliquer des contraintes d'unicité (ex: spawn unique).
+     *
+     * @param type Le type de cellule à supprimer
+     */
     private void removeExistingType(CellType type) {
         for (int i = 0; i < GRID_ROWS; i++) {
             for (int j = 0; j < GRID_COLS; j++) {
@@ -213,11 +321,22 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Met à jour l'affichage visuel d'une cellule spécifique.
+     * Synchronise la couleur du Rectangle avec le type de cellule.
+     *
+     * @param row La ligne de la cellule à mettre à jour
+     * @param col La colonne de la cellule à mettre à jour
+     */
     private void updateCell(int row, int col) {
         System.out.println("Mise à jour cellule [" + row + "," + col + "] -> " + grid[row][col]);
         gridRectangles[row][col].setFill(grid[row][col].getColor());
     }
 
+    /**
+     * Efface complètement la grille en remettant toutes les cellules à vide.
+     * Met à jour l'affichage et les statistiques après l'opération.
+     */
     private void clearGrid() {
         for (int i = 0; i < GRID_ROWS; i++) {
             for (int j = 0; j < GRID_COLS; j++) {
@@ -228,6 +347,11 @@ public class BombermanLevelEditor extends Application {
         updateStatus();
     }
 
+    /**
+     * Met à jour l'affichage des statistiques du niveau.
+     * Compte les différents types d'éléments et affiche un résumé
+     * dans la barre de statut.
+     */
     private void updateStatus() {
         int walls = 0, destructibleWalls = 0, enemies = 0, powerUps = 0;
         boolean hasPlayerSpawn = false;
@@ -248,6 +372,17 @@ public class BombermanLevelEditor extends Application {
         ));
     }
 
+    /**
+     * Sauvegarde le niveau actuel dans un fichier.
+     * Utilise un FileChooser pour permettre à l'utilisateur de choisir
+     * l'emplacement et le nom du fichier. Le format de sauvegarde est .bmn.
+     *
+     * <p>Format du fichier :</p>
+     * <ul>
+     *   <li>Première ligne : dimensions (lignes,colonnes)</li>
+     *   <li>Lignes suivantes : valeurs ordinales des types de cellules</li>
+     * </ul>
+     */
     private void saveLevel() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Sauvegarder le niveau");
@@ -273,6 +408,14 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Charge un niveau depuis un fichier.
+     * Utilise un FileChooser pour permettre à l'utilisateur de sélectionner
+     * le fichier à charger. Valide la compatibilité des dimensions avant le chargement.
+     *
+     * @throws IOException Si une erreur survient lors de la lecture du fichier
+     * @throws NumberFormatException Si le format du fichier est invalide
+     */
     private void loadLevel() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Charger un niveau");
@@ -287,11 +430,14 @@ public class BombermanLevelEditor extends Application {
                 String[] sizeParts = sizeStr.split(",");
                 int rows = Integer.parseInt(sizeParts[0]);
                 int cols = Integer.parseInt(sizeParts[1]);
+
+                // Validation des dimensions
                 if (rows != GRID_ROWS || cols != GRID_COLS) {
                     showAlert("Erreur", "Taille de grille incompatible !");
                     return;
                 }
 
+                // Chargement des données de niveau
                 for (int i = 0; i < GRID_ROWS; i++) {
                     String line = reader.readLine();
                     String[] values = line.split(",");
@@ -311,6 +457,12 @@ public class BombermanLevelEditor extends Application {
         }
     }
 
+    /**
+     * Affiche une boîte de dialogue d'information à l'utilisateur.
+     *
+     * @param title Le titre de la boîte de dialogue
+     * @param message Le message à afficher
+     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -319,6 +471,12 @@ public class BombermanLevelEditor extends Application {
         alert.showAndWait();
     }
 
+    /**
+     * Point d'entrée principal de l'application.
+     * Lance l'interface graphique JavaFX.
+     *
+     * @param args Arguments de ligne de commande (non utilisés)
+     */
     public static void main(String[] args) {
         launch(args);
     }

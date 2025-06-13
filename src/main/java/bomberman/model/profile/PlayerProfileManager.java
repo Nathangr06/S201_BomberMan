@@ -1,4 +1,3 @@
-
 package bomberman.model.profile;
 
 import java.io.*;
@@ -7,19 +6,44 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Gestionnaire de profils de joueurs pour le jeu Bomberman.
+ * Cette classe implémente le pattern Singleton pour gérer les profils des joueurs,
+ * incluant la persistance des données via la sérialisation.
+ *
+ * @author BUT1_TD3_G35
+ * @version 1.0
+ * @since 1.0
+ */
 public class PlayerProfileManager {
+
+    /** Chemin du fichier de sauvegarde des profils */
     private static final String FILE_PATH = "profiles.dat";
+
+    /** Map contenant tous les profils de joueurs indexés par nom d'utilisateur */
     private Map<String, PlayerProfile> profiles;
+
+    /** Profil actuellement sélectionné */
     private PlayerProfile currentProfile;
+
+    /** Instance unique du gestionnaire (pattern Singleton) */
     private static PlayerProfileManager instance;
 
-    // Constructeur privé pour le Singleton
+    /**
+     * Constructeur privé pour le pattern Singleton.
+     * Initialise la map des profils et charge les profils existants depuis le fichier.
+     */
     private PlayerProfileManager() {
         profiles = new HashMap<>();
         loadProfiles();
     }
 
-    // Méthode pour obtenir l'instance unique
+    /**
+     * Obtient l'instance unique du gestionnaire de profils.
+     * Crée l'instance si elle n'existe pas encore (lazy initialization).
+     *
+     * @return l'instance unique de PlayerProfileManager
+     */
     public static PlayerProfileManager getInstance() {
         if (instance == null) {
             instance = new PlayerProfileManager();
@@ -27,7 +51,14 @@ public class PlayerProfileManager {
         return instance;
     }
 
-    // Méthode pour créer ou récupérer un profil
+    /**
+     * Récupère un profil existant ou en crée un nouveau si inexistant.
+     * Si le profil est créé, il devient automatiquement le profil courant.
+     *
+     * @param username le nom d'utilisateur du profil
+     * @param firstName le prénom du joueur
+     * @return le profil correspondant (existant ou nouvellement créé)
+     */
     public PlayerProfile getOrCreateProfile(String username, String firstName) {
         PlayerProfile profile = profiles.get(username);
         if (profile == null) {
@@ -39,22 +70,38 @@ public class PlayerProfileManager {
         return profile;
     }
 
-    // Getter pour le profil courant
+    /**
+     * Récupère le profil actuellement sélectionné.
+     *
+     * @return le profil courant, ou null si aucun profil n'est sélectionné
+     */
     public PlayerProfile getCurrentProfile() {
         return currentProfile;
     }
 
-    // Setter pour le profil courant
+    /**
+     * Définit le profil courant.
+     *
+     * @param profile le profil à définir comme courant
+     */
     public void setCurrentProfile(PlayerProfile profile) {
         this.currentProfile = profile;
     }
 
-    // Récupérer tous les profils
+    /**
+     * Récupère tous les profils de joueurs.
+     *
+     * @return une collection contenant tous les profils enregistrés
+     */
     public Collection<PlayerProfile> getAllProfiles() {
         return new ArrayList<>(profiles.values());
     }
 
-    // Sauvegarder les profils
+    /**
+     * Sauvegarde tous les profils dans le fichier de persistance.
+     * Utilise la sérialisation Java pour écrire la map des profils.
+     * En cas d'erreur, affiche un message d'erreur et la stack trace.
+     */
     public void saveProfiles() {
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(FILE_PATH))) {
             out.writeObject(profiles);
@@ -64,7 +111,11 @@ public class PlayerProfileManager {
         }
     }
 
-    // Charger les profils
+    /**
+     * Charge les profils depuis le fichier de persistance.
+     * Si le fichier n'existe pas, initialise une map vide.
+     * En cas d'erreur de lecture, initialise une map vide et affiche un message d'erreur.
+     */
     @SuppressWarnings("unchecked")
     private void loadProfiles() {
         File file = new File(FILE_PATH);
@@ -80,7 +131,14 @@ public class PlayerProfileManager {
         }
     }
 
-    // Supprimer un profil
+    /**
+     * Supprime un profil de joueur.
+     * Si le profil supprimé était le profil courant, remet le profil courant à null.
+     * Sauvegarde automatiquement les profils après suppression.
+     *
+     * @param username le nom d'utilisateur du profil à supprimer
+     * @return true si le profil a été supprimé avec succès, false si le profil n'existait pas
+     */
     public boolean deleteProfile(String username) {
         PlayerProfile removed = profiles.remove(username);
         if (removed != null) {
